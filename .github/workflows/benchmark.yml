@@ -1,0 +1,77 @@
+name: Memory benchmark
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: memory-benchmark
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Install desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1
+      - name: Download checksum-pinned official releases
+        run: python3 scripts/install.py
+      - name: Run isolated desktop trials
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BENCHMARK_COMMIT: ${{ github.sha }}
+          BENCHMARK_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            bash scripts/run.sh --repeats 1 --budgets '256' --settle-seconds 10 --sample-seconds 4 --probes 1
+          else
+            bash scripts/run.sh
+          fi
+      - name: Build measured report
+        if: always()
+        run: python3 scripts/build.py
+      - name: Install browser for report checks
+        run: npx playwright install --with-deps chromium
+      - name: Test report in Chromium
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: memory-benchmark-${{ github.run_id }}
+          path: |
+            results/
+            .tmp/pages/
+            .tmp/report-*.png
+          retention-days: 90
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: .tmp/pages
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: benchmark
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
+        id: deployment
