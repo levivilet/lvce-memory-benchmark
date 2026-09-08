@@ -1,0 +1,30 @@
+[
+  {
+    "id": "lvce",
+    "name": "LVCE Editor",
+    "version": "v0.114.2",
+    "archive": "lvce-v0.114.2_amd64.deb",
+    "url": "https://github.com/lvce-editor/lvce-editor/releases/download/v0.114.2/lvce-v0.114.2_amd64.deb",
+    "sha256": "27d8fd309117f4d3698431b2a46904778bd1e6e2f60e2a8f6501c3fdc946e4b9",
+    "binary": "usr/lib/lvce/lvce"
+  },
+  {
+    "id": "vscode",
+    "name": "VS Code",
+    "version": "1.136.2",
+    "commit": "88e44fa0e00b08f7758b4f6d05632e4fd5e4df6f",
+    "archive": "vscode.tar.gz",
+    "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/88e44fa0e00b08f7758b4f6d05632e4fd5e4df6f/code-stable-x64-1788561485.tar.gz",
+    "sha256": "2bab551c3677d33010e317a7845e61d2f0fa0c80f8518399c42e0f941f64f18f",
+    "binary": "VSCode-linux-x64/code"
+  },
+  {
+    "id": "zed",
+    "name": "Zed",
+    "version": "v1.18.1",
+    "archive": "zed-linux-x86_64.tar.gz",
+    "url": "https://github.com/zed-industries/zed/releases/download/v1.18.1/zed-linux-x86_64.tar.gz",
+    "sha256": "eea62268d8ec5fd3587df06fa76e072c104cca5e0b0b0abecbc28ae5b87c0bad",
+    "binary": "zed.app/libexec/zed-editor"
+  }
+]
