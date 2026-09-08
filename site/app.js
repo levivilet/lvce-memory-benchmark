@@ -41,6 +41,7 @@ async function main() {
   $('metric').addEventListener('change',drawNormal);drawNormal()
   $('normal-table').innerHTML=data.summaries.map(s=>{const g=normal(s), e=data.editors.find(e=>e.id===s.editor);return `<tr><td>${escape(e.name)}<small>${escape(e.version)}</small></td><td>${g.passed}/${g.attempted}</td>${['pss','uss','rss','current'].map(k=>`<td>${fmt(g.metrics[k])}</td>`).join('')}<td>${fmt(g.peak)}</td></tr>`}).join('')
   $('budget-chart').innerHTML=bars(data.summaries.filter(s=>s.lowestTestedBudgetMiB!==null).map(s=>({id:s.editor,label:names[s.editor],value:s.lowestTestedBudgetMiB,prefix:s.atLowerBoundary?'≤ ':''})).sort((a,b)=>a.value-b.value),'Lowest tested passing application memory budget, MiB')
+  $('budget-summary').innerHTML=data.summaries.map(s=>{const g=limited(s);return `<tr><td>${escape(names[s.editor])}</td><td>${g?`${s.atLowerBoundary?'≤ ':''}${g.budgetMiB}`:'—'}</td><td>${fmt(g?.metrics.pss)}</td><td>${fmt(g?.peak)}</td></tr>`}).join('')
   $('budget-head').innerHTML=`<tr><th>Editor</th>${data.protocol.budgets.map(b=>`<th>${b} MiB</th>`).join('')}</tr>`
   $('budget-table').innerHTML=data.summaries.map(s=>`<tr><td>${escape(names[s.editor])}</td>${s.groups.filter(g=>g.budgetMiB!==null).map(g=>`<td><span class="badge ${!g.attempted?'':g.qualified?'pass':g.passed?'partial':'fail'}">${g.attempted?`${g.passed}/${g.attempted}`:'—'}</span></td>`).join('')}</tr>`).join('')
   const maxComponent=Math.max(1,...data.summaries.map(s=>['anon','file','kernel'].reduce((sum,k)=>sum+(normal(s)?.metrics[k]?.median||0),0)))

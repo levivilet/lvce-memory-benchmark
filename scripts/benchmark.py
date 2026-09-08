@@ -183,14 +183,20 @@ def trial(editor, budget, repeat, args, user):
                 result['error'] += '\n' + error.stderr
         finally:
             result['durationSeconds'] = time.monotonic() - started
-            if group and group.exists():
-                result['events'] = counters((group / 'memory.events').read_text())
-            result['service'] = run(['systemctl', 'show', unit, '-p', 'Result', '-p', 'ExecMainStatus', '-p', 'MemoryPeak'])
-            log = run(['journalctl', '-u', unit, '--no-pager', '-n', '80', '-o', 'cat'])
-            (artifact / 'application.log').write_text(log.replace(str(home), '<profile>'))
-            subprocess.run(['import', '-window', 'root', str(artifact / 'screen.png')], capture_output=True, timeout=10)
-            subprocess.run(['systemctl', 'stop', unit], capture_output=True, timeout=15)
-            subprocess.run(['systemctl', 'reset-failed', unit], capture_output=True, timeout=15)
+            try:
+                if group and group.exists():
+                    result['events'] = counters((group / 'memory.events').read_text())
+                result['service'] = run(['systemctl', 'show', unit, '-p', 'Result', '-p', 'ExecMainStatus', '-p', 'MemoryPeak'])
+                log = run(['journalctl', '-u', unit, '--no-pager', '-n', '80', '-o', 'cat'])
+                (artifact / 'application.log').write_text(log.replace(str(home), '<profile>'))
+                subprocess.run(['import', '-window', 'root', str(artifact / 'screen.png')], check=True, capture_output=True, timeout=10)
+            except (OSError, subprocess.SubprocessError) as error:
+                result['diagnosticError'] = str(error)
+            finally:
+                # Cleanup is mandatory even when screenshot/log collection fails.
+                # A failed stop aborts the benchmark to avoid overlapping applications.
+                run(['systemctl', 'stop', unit])
+                subprocess.run(['systemctl', 'reset-failed', unit], capture_output=True, timeout=15)
     return result
 
 

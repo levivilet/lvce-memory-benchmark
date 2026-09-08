@@ -63,7 +63,8 @@ def summarize(trials, repeats, budgets):
             complete = len(runs) == repeats and len({r['repeat'] for r in runs}) == repeats
             metrics = {}
             for key in ['pss', 'uss', 'rss', 'current', 'anon', 'file', 'kernel', 'processCount']:
-                medians = [statistics.median(s[key] for s in r['samples'] if s['phase'] == 'idle' and s[key] is not None) for r in passed]
+                values = [[s[key] for s in r['samples'] if s['phase'] == 'idle' and s[key] is not None] for r in passed]
+                medians = [statistics.median(v) for v in values if v]
                 metrics[key] = distribution(medians)
             groups.append(dict(budgetMiB=budget, attempted=len(runs), passed=len(passed),
                                qualified=complete and len(passed) == repeats, metrics=metrics,
