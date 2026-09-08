@@ -1,8 +1,10 @@
 import sys
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
 from metrics import counters, process_memory, summarize
+from benchmark import observe
 
 
 class MetricsTests(unittest.TestCase):
@@ -14,6 +16,28 @@ class MetricsTests(unittest.TestCase):
     def test_missing_accounting_is_not_zero(self):
         with self.assertRaises(ValueError):
             process_memory('Pss: 5 kB\n')
+
+    def test_exited_helper_discards_snapshot_then_retries_all_processes(self):
+        result = {'invalidSamples': 0}
+        complete = {'pss': 123456}
+        with patch('benchmark.sample', side_effect=[FileNotFoundError(), complete]) as read, patch('benchmark.time.sleep'):
+            self.assertEqual(observe(Path('/unused'), result), complete)
+        self.assertEqual(read.call_count, 2)
+        self.assertEqual(result['invalidSamples'], 1)
+
+    def test_persistent_churn_has_bounded_retries(self):
+        result = {'invalidSamples': 0}
+        with patch('benchmark.sample', side_effect=ProcessLookupError()) as read, patch('benchmark.time.sleep'):
+            with self.assertRaises(ProcessLookupError):
+                observe(Path('/unused'), result)
+        self.assertEqual(read.call_count, 5)
+        self.assertEqual(result['invalidSamples'], 5)
+
+    def test_permission_failure_never_silently_discards_process(self):
+        with patch('benchmark.sample', side_effect=PermissionError()) as read:
+            with self.assertRaises(PermissionError):
+                observe(Path('/unused'), {'invalidSamples': 0})
+        self.assertEqual(read.call_count, 1)
 
     def test_event_counters(self):
         self.assertEqual(counters('oom 2\noom_kill 1\nhigh 0\n'), {'oom': 2, 'oom_kill': 1, 'high': 0})

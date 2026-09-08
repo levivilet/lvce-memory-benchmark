@@ -95,6 +95,17 @@ def restore(file, marker, timeout):
         raise RuntimeError('Could not restore exact fixture after probe')
 
 
+def observe(group, result):
+    for attempt in range(5):
+        try:
+            return sample(group)
+        except (FileNotFoundError, ProcessLookupError):
+            result['invalidSamples'] += 1
+            if attempt == 4:
+                raise
+            time.sleep(.05)
+
+
 def trial(editor, budget, repeat, args, user):
     identity = f"{editor['id']}-{budget or 'normal'}-{repeat}"
     unit = f'lvce-memory-{uuid.uuid4().hex}.service'
@@ -157,19 +168,19 @@ def trial(editor, budget, repeat, args, user):
             end = time.monotonic() + args.sample_seconds
             while time.monotonic() < end:
                 try:
-                    result['samples'].append(dict(phase='idle', seconds=time.monotonic() - started, **sample(group)))
+                    result['samples'].append(dict(phase='idle', seconds=time.monotonic() - started, **observe(group, result)))
                 except (FileNotFoundError, ProcessLookupError):
-                    result['invalidSamples'] += 1
+                    pass
                 time.sleep(1)
             if len(result['samples']) < max(2, args.sample_seconds // 2) or result['invalidSamples'] > len(result['samples']):
                 raise RuntimeError('Insufficient complete memory samples')
             for index in range(args.probes):
                 marker = f'probe-{index}-' + uuid.uuid4().hex
                 result['probeMs'].append(probe(window, file, marker, args.probe_timeout))
-                result['samples'].append(dict(phase='editing', seconds=time.monotonic() - started, **sample(group)))
+                result['samples'].append(dict(phase='editing', seconds=time.monotonic() - started, **observe(group, result)))
                 restore(file, marker, args.probe_timeout)
             result['events'] = counters((group / 'memory.events').read_text())
-            result['final'] = sample(group)
+            result['final'] = observe(group, result)
             result['pressure'] = (group / 'memory.pressure').read_text()
             if result['events'].get('oom', 0) or result['events'].get('oom_kill', 0):
                 raise RuntimeError('OOM event invalidates trial even if the UI survived')

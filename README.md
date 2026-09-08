@@ -61,7 +61,9 @@ monitor's accounting method. These results cannot diagnose that difference.
   three further edit/save checks, each with a five-second deadline including
   synthetic typing. Restore and verify the original fixture after each check.
 - Permission errors invalidate trials. Process exits or membership changes discard
-  the entire sample, never just the missing process. Require at least half the
+  the entire sample, never just the missing process. Retry a complete snapshot up
+  to five times with 50 ms between attempts, including final/editing snapshots.
+  Require at least half the
   requested idle samples (minimum two); reject trials with more discarded than
   complete samples. Any OOM, swap, failed save, or empty process group fails the
   trial. Memory sampling is sequential, not an atomic system-wide snapshot.
