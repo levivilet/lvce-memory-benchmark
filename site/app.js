@@ -2,12 +2,12 @@ const $ = (id) => document.getElementById(id)
 const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const mib = (value) => value / 1048576
 const number = (value) => Number.isFinite(value) ? value.toLocaleString('en', {maximumFractionDigits: 1}) : '—'
-const color = (id) => ({lvce:'#823cc6',vscode:'#3284c7',zed:'#4d837c',geany:'#c18c3b'}[id] || '#778195')
+const color = (id) => ({lvce:'#823cc6',vscode:'#3284c7',zed:'#4d837c',geany:'#c18c3b',eclipse:'#57469a',idea:'#d34a70',atom:'#438658',lapce:'#246c9c'}[id] || '#778195')
 const svg = (title, width, height, content) => `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escape(title)}"><title>${escape(title)}</title>${content}</svg>`
 const fmt = (metric) => metric ? number(mib(metric.median)) : '—'
 function bars(rows, title, unit = 'MiB') {
   if (!rows.length) return '<p class="empty">No qualifying measurements available.</p>'
-  const width = 900, left = 135, plot = 640, height = rows.length * 54 + 36
+  const width = 900, left = 180, plot = 595, height = rows.length * 54 + 36
   const max = Math.max(1, ...rows.map(r => r.max ?? r.value)) * 1.08
   const scale = (v) => left + v / max * plot
   let content = Array.from({length:5}, (_,i) => {const value=max*i/4;return `<path d="M${scale(value)} 0V${height-25}" stroke="#eceef3"/><text class="axis" x="${scale(value)}" y="${height-6}" text-anchor="middle">${number(value)}</text>`}).join('')
@@ -46,7 +46,7 @@ async function main() {
   $('budget-head').innerHTML=`<tr><th>Editor</th>${data.protocol.budgets.map(b=>`<th>${b} MiB</th>`).join('')}</tr>`
   $('budget-table').innerHTML=data.summaries.map(s=>`<tr><td>${escape(names[s.editor])}</td>${s.groups.filter(g=>g.budgetMiB!==null).map(g=>`<td><span class="badge ${!g.attempted?'':g.qualified?'pass':g.passed?'partial':'fail'}">${g.attempted?`${g.passed}/${g.attempted}`:'—'}</span></td>`).join('')}</tr>`).join('')
   const maxComponent=Math.max(1,...data.summaries.map(s=>['anon','file','kernel'].reduce((sum,k)=>sum+(normal(s)?.metrics[k]?.median||0),0)))
-  $('composition').innerHTML=svg('Cgroup anonymous, file cache, and kernel memory. MiB.',450,data.summaries.length*64,data.summaries.map((s,i)=>{const g=normal(s);let x=100;return `<text x="0" y="${i*64+28}">${escape(names[s.editor])}</text>`+['anon','file','kernel'].map((k,j)=>{const v=g.metrics[k]?.median||0,w=v/maxComponent*260;const rect=`<rect x="${x}" y="${i*64+8}" width="${w}" height="27" fill="${['#823cc6','#c6a9e5','#dfe4ea'][j]}"/>`;x+=w;return rect}).join('')+`<text class="axis" x="100" y="${i*64+50}">${['anon','file','kernel'].map(k=>`${k}: ${fmt(g.metrics[k])}`).join(' · ')}</text>`}).join(''))
+  $('composition').innerHTML=svg('Cgroup anonymous, file cache, and kernel memory. MiB.',520,data.summaries.length*64,data.summaries.map((s,i)=>{const g=normal(s);let x=165;return `<text x="0" y="${i*64+28}">${escape(names[s.editor])}</text>`+['anon','file','kernel'].map((k,j)=>{const v=g.metrics[k]?.median||0,w=v/maxComponent*260;const rect=`<rect x="${x}" y="${i*64+8}" width="${w}" height="27" fill="${['#823cc6','#c6a9e5','#dfe4ea'][j]}"/>`;x+=w;return rect}).join('')+`<text class="axis" x="165" y="${i*64+50}">${['anon','file','kernel'].map(k=>`${k}: ${fmt(g.metrics[k])}`).join(' · ')}</text>`}).join(''))
   const ms=(d)=>d?`${number(d.median)}<small>${number(d.min)}–${number(d.max)}</small>`:'—'
   $('latency-table').innerHTML=data.summaries.map(s=>`<tr><td>${escape(names[s.editor])}</td><td>${ms(normal(s).probeMs)}</td><td>${ms(limited(s)?.probeMs)}</td></tr>`).join('')
   $('trial').innerHTML=data.trials.map((t,i)=>`<option value="${i}">${escape(names[t.editor])} · ${t.budgetMiB?`${t.budgetMiB} MiB`:'normal'} · run ${t.repeat} · ${t.status}</option>`).join('')

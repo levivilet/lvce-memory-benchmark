@@ -55,7 +55,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=ROOT / 'results/editors')
     parser.add_argument('--output', type=Path, default=ROOT / 'results/results.json')
-    parser.add_argument('--editors', default='lvce,vscode,zed,geany')
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce')
     args = parser.parse_args()
     results = [json.loads(path.read_text()) for path in sorted(args.input.glob('*/results.json'))]
     data = combine(results, args.editors.split(','))

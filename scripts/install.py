@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def install():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--editors', default='lvce,vscode,zed,geany')
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce')
     args = parser.parse_args()
     editors = json.loads((ROOT / 'editors.lock.json').read_text())
     ids = args.editors.split(',')

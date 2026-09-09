@@ -52,7 +52,53 @@ def profile_config(editor, home):
         return ['--user-data-dir', data, '--no-sandbox', '--ozone-platform=x11']
     if editor['id'] == 'zed':
         return ['--user-data-dir', data]
-    return ['--new-instance', '--no-session', '--config', data]
+    if editor['id'] == 'geany':
+        return ['--new-instance', '--no-session', '--config', data]
+    if editor['id'] == 'atom':
+        write_json(home / '.atom/config.json', {'*': {
+            'core': {'telemetryConsent': 'no', 'automaticallyUpdate': False},
+            'welcome': {'showOnStartup': False},
+            'autosave': {'enabled': False},
+        }})
+        return ['--new-window', '--no-sandbox']
+    if editor['id'] == 'lapce':
+        config = home / '.config/lapce-stable/settings.toml'
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text('[core]\nmodal = false\n[editor]\nautosave-interval = 0\nformat-on-save = false\n')
+        return ['--new']
+    if editor['id'] == 'eclipse':
+        configuration = home / 'eclipse-configuration'
+        shutil.copytree(Path(editor['command']).parent / 'configuration', configuration)
+        preferences = home / 'workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings'
+        preferences.mkdir(parents=True)
+        (preferences / 'org.eclipse.ui.prefs').write_text('eclipse.preferences.version=1\nshowIntro=false\n')
+        (preferences / 'org.eclipse.ui.ide.prefs').write_text('eclipse.preferences.version=1\nSHOW_TIPS_AND_TRICKS=false\n')
+        return ['-nosplash', '-skipIntro', '-data', home / 'workspace',
+                '-configuration', configuration, '-vm', '/usr/lib/jvm/java-21-openjdk-amd64/bin/java',
+                '--launcher.openFile']
+    if editor['id'] == 'idea':
+        config = home / 'idea-config'
+        (config / 'options').mkdir(parents=True)
+        (config / 'options/updates.xml').write_text(
+            '<application><component name="UpdatesConfigurable">'
+            '<option name="CHECK_NEEDED" value="false" /></component></application>')
+        # Acknowledge the pinned Community Edition terms and privacy notice.
+        # Java filesystem encoding of the "privacy_policy" preferences node.
+        privacy_node = '_!(!!cg"p!(}!}@"j!(k!|w"w!\'8!b!"p!\':!e@=='
+        preferences = home / '.java/.userPrefs/jetbrains' / privacy_node
+        preferences.mkdir(parents=True)
+        (preferences / 'prefs.xml').write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<!DOCTYPE map SYSTEM "http://java.sun.com/dtd/preferences.dtd">'
+            '<map MAP_XML_VERSION="1.0"><entry key="accepted_version" value="2.5" />'
+            '<entry key="euacommunity_accepted_version" value="1.0" /></map>')
+        (home / 'idea.properties').write_text(
+            f'idea.config.path={config}\nidea.system.path={home / "idea-system"}\n'
+            f'idea.plugins.path={home / "idea-plugins"}\nidea.log.path={home / "idea-log"}\n'
+            'idea.initially.ask.config=false\njb.consents.confirmation.enabled=false\n'
+            'idea.trust.all.projects=true\n')
+        return ['nosplash', 'dontReopenProjects', '-e']
+    raise ValueError(f"Unsupported editor: {editor['id']}")
 
 
 def window_for(group):
@@ -118,6 +164,10 @@ def trial(editor, budget, repeat, args, user):
         file = home / 'memory-benchmark.txt'
         file.write_text(FIXTURE)
         command = [editor['command'], *profile_config(editor, home), file]
+        if editor['id'] == 'eclipse':
+            # The native launcher delivers --launcher.openFile through D-Bus.
+            # Keep its private session bus inside the measured application cgroup.
+            command = ['dbus-run-session', '--', *command]
         for path in [home, *home.rglob('*')]:
             os.chown(path, user.pw_uid, user.pw_gid)
         env = {'HOME': str(home), 'XDG_CONFIG_HOME': str(home / '.config'),
@@ -126,6 +176,13 @@ def trial(editor, budget, repeat, args, user):
                'PATH': '/usr/local/bin:/usr/bin:/bin', 'LANG': 'C.UTF-8',
                'LIBGL_ALWAYS_SOFTWARE': '1', 'GALLIUM_DRIVER': 'llvmpipe',
                'ZED_ALLOW_EMULATED_GPU': '1', 'ELECTRON_OZONE_PLATFORM_HINT': 'x11'}
+        if editor['id'] in ('eclipse', 'idea'):
+            # Java derives user.home from passwd rather than HOME by default.
+            env['JAVA_TOOL_OPTIONS'] = f'-Duser.home={home}'
+        if editor['id'] == 'idea':
+            env['IDEA_PROPERTIES'] = str(home / 'idea.properties')
+        if editor['id'] == 'atom':
+            env['ATOM_HOME'] = str(home / '.atom')
         launch = ['systemd-run', '--quiet', '--unit', unit, '--service-type=exec',
                   '-p', f'User={user.pw_name}', '-p', 'ExitType=cgroup', '-p', 'RemainAfterExit=yes',
                   '-p', 'MemoryAccounting=yes', '-p', 'MemorySwapMax=0', '-p', 'OOMPolicy=stop',
@@ -213,7 +270,7 @@ def trial(editor, budget, repeat, args, user):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--editors', default='lvce,vscode,zed,geany')
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce')
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--budgets', default='64,128,192,256,320,384,512,768,1024')
     parser.add_argument('--settle-seconds', type=int, default=10)
@@ -246,6 +303,9 @@ def main():
     for editor in editors:
         if not Path(editor['command']).is_file():
             parser.error(f"Missing {editor['command']}; run scripts/install.py first")
+    for editor in editors:
+        if editor['id'] == 'eclipse':
+            editor['runtime'] = run(['dpkg-query', '-W', '-f=${Version}', 'openjdk-21-jre-headless'])
     protocol = {key: value for key, value in vars(args).items() if key != 'output'}
     protocol['budgets'] = budgets
     data = dict(schemaVersion=1, capturedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
