@@ -83,7 +83,9 @@ def profile_config(editor, home):
             '<application><component name="UpdatesConfigurable">'
             '<option name="CHECK_NEEDED" value="false" /></component></application>')
         # Acknowledge the pinned Community Edition terms and privacy notice.
-        preferences = home / '.java/.userPrefs/jetbrains/privacy_policy'
+        # Java filesystem encoding of the "privacy_policy" preferences node.
+        privacy_node = '_!(!!cg"p!(}!}@"j!(k!|w"w!\'8!b!"p!\':!e@=='
+        preferences = home / '.java/.userPrefs/jetbrains' / privacy_node
         preferences.mkdir(parents=True)
         (preferences / 'prefs.xml').write_text(
             '<?xml version="1.0" encoding="UTF-8"?>'
