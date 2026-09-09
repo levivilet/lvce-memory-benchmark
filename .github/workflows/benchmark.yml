@@ -25,7 +25,7 @@ jobs:
       - name: Install desktop dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre dbus
+          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool xclip openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre dbus
       - name: Download checksum-pinned official releases
         run: python3 scripts/install.py --editors "${{ matrix.editor }}"
       - name: Run isolated desktop trials
@@ -35,7 +35,7 @@ jobs:
           BENCHMARK_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [[ "$EVENT_NAME" == 'pull_request' ]]; then
-            bash scripts/run.sh --editors "${{ matrix.editor }}" --repeats 1 --budgets '256' --settle-seconds 10 --sample-seconds 4 --probes 1
+            bash scripts/run.sh --editors "${{ matrix.editor }}" --repeats 3 --budgets '256' --settle-seconds 10 --sample-seconds 4 --probes 10
           else
             bash scripts/run.sh --editors "${{ matrix.editor }}"
           fi
