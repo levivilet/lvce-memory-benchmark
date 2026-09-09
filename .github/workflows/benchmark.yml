@@ -48,7 +48,8 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   report:
-    name: Combined report
+    # Preserve the required branch-protection check name.
+    name: benchmark
     needs: benchmark
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
@@ -84,6 +85,9 @@ jobs:
             .tmp/pages/
             .tmp/report-*.png
           retention-days: 90
+      - name: Require successful editor jobs
+        if: needs.benchmark.result != 'success'
+        run: exit 1
       - uses: actions/upload-pages-artifact@v4
         if: needs.benchmark.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
