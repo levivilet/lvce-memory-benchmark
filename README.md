@@ -73,11 +73,15 @@ monitor's accounting method. These results cannot diagnose that difference.
   startup heap. `memory.swap.max=0` for both normal and constrained runs. Every
   configured cap is verified by reading it back from the kernel. No global
   pressure generator, cache dropping, forced GC, heap cap, or `memory.reclaim`.
-- Wait for a visible window owned by a cgroup process (25-second deadline), resize,
-  settle 10 seconds, then perform an exact edit/save readiness check. Capture
+- Wait for a visible window displaying the fixture and owned by a cgroup process
+  (25-second deadline), settle 10 seconds, then perform an exact edit/save readiness check.
+  Reacquire, resize and activate the fixture window before each check so a replaced
+  startup window cannot leave a stale window ID. Retry window setup only within
+  the probe deadline, before injecting any input; failed edits are never retried. Capture
   complete `/proc/PID/smaps_rollup` samples once a second for 10 seconds. Perform
   three further edit/save checks, each with a five-second deadline including
-  synthetic typing. Restore and verify the original fixture after each check.
+  synthetic typing. Allow 500 ms after observing the saved bytes for the editor's
+  save handler to finish, then restore and verify the original fixture after each check.
 - Permission errors invalidate trials. Process exits or membership changes discard
   the entire sample, never just the missing process. Retry a complete snapshot up
   to five times with 50 ms between attempts, including final/editing snapshots.
@@ -163,8 +167,10 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-PRs run metric tests, all eight desktop baseline smoke trials, report generation
-and browser checks. Pushes to main, weekly schedules and manual dispatch run the
+PRs run metric and interaction tests, three fresh trials per editor at normal memory
+and 256 MiB, report generation and browser checks. Each trial performs ten probes
+after readiness to exercise repeated edit/save/restore interactions.
+Pushes to main, weekly schedules and manual dispatch run the
 full sweep, upload raw evidence, and deploy Pages after the baseline and browser
 checks pass. Budget failures do not prevent publication. Baseline failures do.
 Each editor has its own parallel matrix job and uploads a separate results artifact,

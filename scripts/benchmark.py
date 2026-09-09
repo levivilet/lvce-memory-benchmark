@@ -101,12 +101,15 @@ def profile_config(editor, home):
     raise ValueError(f"Unsupported editor: {editor['id']}")
 
 
-def window_for(group):
+def window_for(group, file):
     candidates = set(pids(group))
     result = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '.'], text=True, capture_output=True, timeout=5)
     for window in result.stdout.split():
         try:
             if int(run(['xdotool', 'getwindowpid', window])) in candidates:
+                # Startup/splash windows can belong to the editor's PID too.
+                if file.name not in run(['xdotool', 'getwindowname', window]):
+                    continue
                 geometry = run(['xdotool', 'getwindowgeometry', '--shell', window])
                 if 'WIDTH=' in geometry and int(geometry.split('WIDTH=')[1].split()[0]) > 300:
                     return window
@@ -115,9 +118,22 @@ def window_for(group):
     return None
 
 
-def probe(window, file, marker, timeout):
+def probe(group, file, marker, timeout):
     started = time.monotonic()
-    run(['xdotool', 'windowactivate', '--sync', window])
+    while time.monotonic() - started < timeout:
+        window = window_for(group, file)
+        if window:
+            try:
+                run(['xdotool', 'windowsize', window, '1280', '720'])
+                run(['xdotool', 'windowactivate', '--sync', window])
+                break
+            except subprocess.CalledProcessError:
+                # A startup window can disappear between discovery and activation.
+                # Retry only before typing; never retry a failed functional check.
+                pass
+        time.sleep(.05)
+    else:
+        raise TimeoutError('No activatable fixture window before probe deadline')
     run(['xdotool', 'mousemove', '--window', window, '600', '250', 'click', '1'])
     run(['xdotool', 'key', '--clearmodifiers', 'Escape', 'ctrl+Home'])
     time.sleep(.15)
@@ -131,6 +147,9 @@ def probe(window, file, marker, timeout):
 
 
 def restore(file, marker, timeout):
+    # The saved bytes can be visible before the editor finishes its save handler.
+    # Eclipse can drop Ctrl+Home during that interval and delete fixture text instead.
+    time.sleep(.5)
     run(['xdotool', 'key', '--clearmodifiers', 'ctrl+Home'])
     run(['xdotool', 'key', '--clearmodifiers', '--repeat', len(marker), '--repeat-delay', '1', 'shift+Right'])
     run(['xdotool', 'key', '--clearmodifiers', 'BackSpace', 'ctrl+s'])
@@ -206,7 +225,7 @@ def trial(editor, budget, repeat, args, user):
                 raise RuntimeError('Memory budget was not applied')
             window = None
             while time.monotonic() - started < args.startup_timeout:
-                window = window_for(group)
+                window = window_for(group, file)
                 if window:
                     break
                 if not pids(group):
@@ -215,11 +234,10 @@ def trial(editor, budget, repeat, args, user):
             if not window:
                 raise TimeoutError('No application-owned window before startup deadline')
             result['windowMs'] = (time.monotonic() - started) * 1000
-            run(['xdotool', 'windowsize', window, '1280', '720'])
             # Same fixed settling period for every application, then verify actual editing.
             time.sleep(args.settle_seconds)
             marker = 'ready-' + uuid.uuid4().hex
-            result['probeMs'].append(probe(window, file, marker, args.probe_timeout))
+            result['probeMs'].append(probe(group, file, marker, args.probe_timeout))
             result['readyMs'] = (time.monotonic() - started) * 1000
             restore(file, marker, args.probe_timeout)
             end = time.monotonic() + args.sample_seconds
@@ -233,7 +251,7 @@ def trial(editor, budget, repeat, args, user):
                 raise RuntimeError('Insufficient complete memory samples')
             for index in range(args.probes):
                 marker = f'probe-{index}-' + uuid.uuid4().hex
-                result['probeMs'].append(probe(window, file, marker, args.probe_timeout))
+                result['probeMs'].append(probe(group, file, marker, args.probe_timeout))
                 result['samples'].append(dict(phase='editing', seconds=time.monotonic() - started, **observe(group, result)))
                 restore(file, marker, args.probe_timeout)
             result['events'] = counters((group / 'memory.events').read_text())
