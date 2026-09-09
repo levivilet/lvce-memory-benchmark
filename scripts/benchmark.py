@@ -147,13 +147,29 @@ def probe(group, file, marker, timeout, window_title=None):
 
 
 def restore(file, marker, timeout):
-    # The saved bytes can be visible before the editor finishes its save handler.
-    # Eclipse can drop Ctrl+Home during that interval and delete fixture text instead.
-    time.sleep(.5)
-    run(['xdotool', 'key', '--clearmodifiers', 'ctrl+Home'])
-    run(['xdotool', 'key', '--clearmodifiers', '--repeat', len(marker), '--repeat-delay', '1', 'shift+Right'])
-    run(['xdotool', 'key', '--clearmodifiers', 'BackSpace', 'ctrl+s'])
     deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        # Saving can expose the bytes before the UI accepts navigation again.
+        # Clear stale clipboard data, then verify selection before deleting anything.
+        subprocess.run(['xclip', '-selection', 'clipboard', '-in'],
+                       input='lvce-memory-selection-pending', text=True, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1)
+        run(['xdotool', 'key', '--clearmodifiers', 'ctrl+Home'])
+        run(['xdotool', 'key', '--clearmodifiers', '--repeat', len(marker), '--repeat-delay', '1', 'shift+Right'])
+        run(['xdotool', 'key', '--clearmodifiers', 'ctrl+c'])
+        time.sleep(.05)
+        try:
+            selection = subprocess.run(['xclip', '-selection', 'clipboard', '-out'],
+                                       text=True, check=True, capture_output=True, timeout=1).stdout
+        except subprocess.SubprocessError:
+            # Clipboard ownership may still be transferring to the application.
+            selection = None
+        if selection == marker and time.monotonic() < deadline:
+            break
+        time.sleep(.05)
+    else:
+        raise TimeoutError('Could not select exact probe marker before restore deadline')
+    run(['xdotool', 'key', '--clearmodifiers', 'BackSpace', 'ctrl+s'])
     while file.read_text() != FIXTURE and time.monotonic() < deadline:
         time.sleep(.05)
     if file.read_text() != FIXTURE:

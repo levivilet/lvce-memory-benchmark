@@ -81,8 +81,10 @@ monitor's accounting method. These results cannot diagnose that difference.
   the probe deadline, before injecting any input; failed edits are never retried. Capture
   complete `/proc/PID/smaps_rollup` samples once a second for 10 seconds. Perform
   three further edit/save checks, each with a five-second deadline including
-  synthetic typing. Allow 500 ms after observing the saved bytes for the editor's
-  save handler to finish, then restore and verify the original fixture after each check.
+  synthetic typing. Before restoring, copy the selection and require it to equal
+  the exact marker before deleting. Retry selection only within the five-second
+  restore deadline; the saved fixture must still match exactly. The clipboard helper
+  runs outside the measured application cgroup; all editors use the same protocol.
 - Permission errors invalidate trials. Process exits or membership changes discard
   the entire sample, never just the missing process. Retry a complete snapshot up
   to five times with 50 ms between attempts, including final/editing snapshots.
@@ -130,7 +132,7 @@ It does not modify your editor profiles or use your desktop display.
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox \
+sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool xclip openbox \
   geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 \
   libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre dbus
 python3 scripts/install.py

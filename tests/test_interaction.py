@@ -79,3 +79,36 @@ class InteractionTests(unittest.TestCase):
                     benchmark.probe(Path('/group'), file, 'marker', 5)
             self.assertEqual(windows.call_count, 1)
             self.assertEqual(sum(call.args[0][1] == 'type' for call in run.call_args_list), 1)
+
+
+class RestoreTests(unittest.TestCase):
+    def test_wrong_selection_never_deletes_fixture_text(self):
+        with patch('benchmark.run') as run, \
+                patch('benchmark.subprocess.run', return_value=subprocess.CompletedProcess([], 0, stdout='wrong selection')), \
+                patch('benchmark.time.sleep'), patch('benchmark.time.monotonic', side_effect=range(100)):
+            with self.assertRaises(TimeoutError):
+                benchmark.restore(Path('/unused'), 'marker', 5)
+        self.assertFalse(any('BackSpace' in call.args[0] for call in run.call_args_list))
+
+    def test_selection_is_verified_before_deleting_and_saving(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            file = Path(temporary) / 'fixture.txt'
+            file.write_text(benchmark.FIXTURE)
+            selections = iter(['wrong', 'marker'])
+            commands = []
+
+            def clipboard(args, **kwargs):
+                if '-out' in args:
+                    value = next(selections)
+                    commands.append(('selection', value))
+                    return subprocess.CompletedProcess(args, 0, stdout=value)
+                commands.append(('clear', kwargs['input']))
+                return subprocess.CompletedProcess(args, 0)
+
+            with patch('benchmark.run', side_effect=lambda args: commands.append(args)), \
+                    patch('benchmark.subprocess.run', side_effect=clipboard), patch('benchmark.time.sleep'):
+                benchmark.restore(file, 'marker', 5)
+            deletes = [i for i, command in enumerate(commands) if 'BackSpace' in command]
+            self.assertEqual(len(deletes), 1)
+            self.assertLess(commands.index(('selection', 'marker')), deletes[0])
+            self.assertEqual(sum(command[0] == 'clear' for command in commands), 2)
