@@ -73,10 +73,11 @@ monitor's accounting method. These results cannot diagnose that difference.
   startup heap. `memory.swap.max=0` for both normal and constrained runs. Every
   configured cap is verified by reading it back from the kernel. No global
   pressure generator, cache dropping, forced GC, heap cap, or `memory.reclaim`.
-- Wait for a visible window displaying the fixture and owned by a cgroup process
+- Wait for a visible window owned by a cgroup process
   (25-second deadline), settle 10 seconds, then perform an exact edit/save readiness check.
-  Reacquire, resize and activate the fixture window before each check so a replaced
-  startup window cannot leave a stale window ID. Retry window setup only within
+  Reacquire, resize and activate the window before each check so a replaced
+  startup window cannot leave a stale window ID. IntelliJ additionally requires the
+  fixture name in the window title to exclude transient startup windows. Retry setup within
   the probe deadline, before injecting any input; failed edits are never retried. Capture
   complete `/proc/PID/smaps_rollup` samples once a second for 10 seconds. Perform
   three further edit/save checks, each with a five-second deadline including

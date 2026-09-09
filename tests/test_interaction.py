@@ -11,6 +11,13 @@ import benchmark
 
 
 class InteractionTests(unittest.TestCase):
+    def test_editors_without_file_titles_keep_owned_window_selection(self):
+        search = subprocess.CompletedProcess([], 0, stdout='editor\n')
+        with patch('benchmark.pids', return_value=[42]), \
+                patch('benchmark.subprocess.run', return_value=search), \
+                patch('benchmark.run', side_effect=['42', 'WIDTH=1280']):
+            self.assertEqual(benchmark.window_for(Path('/group')), 'editor')
+
     def test_window_selection_ignores_splash_and_unrelated_processes(self):
         def run(args):
             window = args[-1]
@@ -24,7 +31,7 @@ class InteractionTests(unittest.TestCase):
         with patch('benchmark.pids', return_value=[42]), \
                 patch('benchmark.subprocess.run', return_value=search), \
                 patch('benchmark.run', side_effect=run):
-            self.assertEqual(benchmark.window_for(Path('/group'), Path('memory-benchmark.txt')), 'editor')
+            self.assertEqual(benchmark.window_for(Path('/group'), 'memory-benchmark.txt'), 'editor')
 
     def test_probe_reacquires_a_replaced_window_before_typing(self):
         with tempfile.TemporaryDirectory() as temporary:

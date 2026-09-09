@@ -101,14 +101,14 @@ def profile_config(editor, home):
     raise ValueError(f"Unsupported editor: {editor['id']}")
 
 
-def window_for(group, file):
+def window_for(group, title=None):
     candidates = set(pids(group))
     result = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '.'], text=True, capture_output=True, timeout=5)
     for window in result.stdout.split():
         try:
             if int(run(['xdotool', 'getwindowpid', window])) in candidates:
                 # Startup/splash windows can belong to the editor's PID too.
-                if file.name not in run(['xdotool', 'getwindowname', window]):
+                if title and title not in run(['xdotool', 'getwindowname', window]):
                     continue
                 geometry = run(['xdotool', 'getwindowgeometry', '--shell', window])
                 if 'WIDTH=' in geometry and int(geometry.split('WIDTH=')[1].split()[0]) > 300:
@@ -118,10 +118,10 @@ def window_for(group, file):
     return None
 
 
-def probe(group, file, marker, timeout):
+def probe(group, file, marker, timeout, window_title=None):
     started = time.monotonic()
     while time.monotonic() - started < timeout:
-        window = window_for(group, file)
+        window = window_for(group, window_title)
         if window:
             try:
                 run(['xdotool', 'windowsize', window, '1280', '720'])
@@ -182,6 +182,8 @@ def trial(editor, budget, repeat, args, user):
         home = Path(temporary)
         file = home / 'memory-benchmark.txt'
         file.write_text(FIXTURE)
+        # IDEA creates transient startup windows; other editors may not title their file.
+        window_title = file.name if editor['id'] == 'idea' else None
         command = [editor['command'], *profile_config(editor, home), file]
         if editor['id'] == 'eclipse':
             # The native launcher delivers --launcher.openFile through D-Bus.
@@ -225,7 +227,7 @@ def trial(editor, budget, repeat, args, user):
                 raise RuntimeError('Memory budget was not applied')
             window = None
             while time.monotonic() - started < args.startup_timeout:
-                window = window_for(group, file)
+                window = window_for(group, window_title)
                 if window:
                     break
                 if not pids(group):
@@ -237,7 +239,7 @@ def trial(editor, budget, repeat, args, user):
             # Same fixed settling period for every application, then verify actual editing.
             time.sleep(args.settle_seconds)
             marker = 'ready-' + uuid.uuid4().hex
-            result['probeMs'].append(probe(group, file, marker, args.probe_timeout))
+            result['probeMs'].append(probe(group, file, marker, args.probe_timeout, window_title))
             result['readyMs'] = (time.monotonic() - started) * 1000
             restore(file, marker, args.probe_timeout)
             end = time.monotonic() + args.sample_seconds
@@ -251,7 +253,7 @@ def trial(editor, budget, repeat, args, user):
                 raise RuntimeError('Insufficient complete memory samples')
             for index in range(args.probes):
                 marker = f'probe-{index}-' + uuid.uuid4().hex
-                result['probeMs'].append(probe(group, file, marker, args.probe_timeout))
+                result['probeMs'].append(probe(group, file, marker, args.probe_timeout, window_title))
                 result['samples'].append(dict(phase='editing', seconds=time.monotonic() - started, **observe(group, result)))
                 restore(file, marker, args.probe_timeout)
             result['events'] = counters((group / 'memory.events').read_text())
