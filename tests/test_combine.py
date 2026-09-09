@@ -31,7 +31,7 @@ class CombineTests(unittest.TestCase):
         self.assertEqual(data['capturedAt'], self.results[0]['capturedAt'])
         self.assertEqual(data['capturedAtByEditor']['zed'], self.results[2]['capturedAt'])
         self.assertEqual(data['protocol']['editors'], ','.join(self.editors))
-        self.assertEqual(len(data['summaries']), 4)
+        self.assertEqual(len(data['summaries']), len(self.editors))
         self.assertTrue(all(s['lowestTestedBudgetMiB'] is None for s in data['summaries']))
         self.assertEqual(self.results, original)
 

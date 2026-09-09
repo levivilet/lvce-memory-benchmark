@@ -14,7 +14,7 @@ JetBrains entry is **IntelliJ IDEA Community Edition 2025.2.6.3**, not a combine
 measurement of all JetBrains products. Eclipse uses the **4.36 SDK** distribution.
 These are single-file measurements, not comparisons of full IDE project workloads.
 First-run welcome screens and optional data-sharing prompts are preconfigured;
-IntelliJ's bundled privacy notice is acknowledged in the disposable profile with
+IntelliJ's bundled Community Edition terms and privacy notice are acknowledged in the disposable profile with
 optional data sharing disabled.
 
 Official references: [Atom release](https://github.com/atom/atom/releases/tag/v1.60.0),
@@ -55,6 +55,7 @@ monitor's accounting method. These results cannot diagnose that difference.
   A fresh HOME, profile and config per trial; no user-installed extensions. VS Code
   additionally uses `--disable-extensions`; built-in application components remain.
   Eclipse uses an empty workspace and Ubuntu OpenJDK 21 (the package version is recorded).
+  Eclipse’s private D-Bus session runs inside its measured cgroup.
   IntelliJ IDEA CE uses LightEdit mode and its bundled JetBrains Runtime.
   Java user settings are isolated too; vendor JVM defaults remain unchanged.
   Telemetry/updaters are disabled where configured. AI features are disabled in VS Code and Zed.
@@ -126,7 +127,7 @@ It does not modify your editor profiles or use your desktop display.
 sudo apt-get update
 sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox \
   geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 \
-  libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre
+  libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre dbus
 python3 scripts/install.py
 bash scripts/run.sh
 python3 scripts/build.py

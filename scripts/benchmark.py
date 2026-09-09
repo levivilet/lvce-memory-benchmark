@@ -82,13 +82,14 @@ def profile_config(editor, home):
         (config / 'options/updates.xml').write_text(
             '<application><component name="UpdatesConfigurable">'
             '<option name="CHECK_NEEDED" value="false" /></component></application>')
-        # Acknowledge the bundled privacy notice, with optional data sharing disabled.
+        # Acknowledge the pinned Community Edition terms and privacy notice.
         preferences = home / '.java/.userPrefs/jetbrains/privacy_policy'
         preferences.mkdir(parents=True)
         (preferences / 'prefs.xml').write_text(
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<!DOCTYPE map SYSTEM "http://java.sun.com/dtd/preferences.dtd">'
-            '<map MAP_XML_VERSION="1.0"><entry key="accepted_version" value="2.5" /></map>')
+            '<map MAP_XML_VERSION="1.0"><entry key="accepted_version" value="2.5" />'
+            '<entry key="euacommunity_accepted_version" value="1.0" /></map>')
         (home / 'idea.properties').write_text(
             f'idea.config.path={config}\nidea.system.path={home / "idea-system"}\n'
             f'idea.plugins.path={home / "idea-plugins"}\nidea.log.path={home / "idea-log"}\n'
@@ -161,6 +162,10 @@ def trial(editor, budget, repeat, args, user):
         file = home / 'memory-benchmark.txt'
         file.write_text(FIXTURE)
         command = [editor['command'], *profile_config(editor, home), file]
+        if editor['id'] == 'eclipse':
+            # The native launcher delivers --launcher.openFile through D-Bus.
+            # Keep its private session bus inside the measured application cgroup.
+            command = ['dbus-run-session', '--', *command]
         for path in [home, *home.rglob('*')]:
             os.chown(path, user.pw_uid, user.pw_gid)
         env = {'HOME': str(home), 'XDG_CONFIG_HOME': str(home / '.config'),
