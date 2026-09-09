@@ -37,7 +37,8 @@ monitor's accounting method. These results cannot diagnose that difference.
   from Ubuntu's package repository and its exact distribution version is recorded.
   To update an official build, update its version, immutable URL, hash and binary
   path together. Downloads never silently follow `latest` during a benchmark.
-- One editor at a time, with all trials shuffled once using recorded seed 1729.
+- One editor per CI runner, with its trials shuffled once using recorded seed 1729.
+  Editors run in parallel on separate runners; local runs use one editor at a time.
   A fresh HOME, profile and config per trial; no user-installed extensions. VS Code
   additionally uses `--disable-extensions`; built-in application components remain.
   Telemetry/updaters are disabled where configured. AI features are disabled in VS Code and Zed.
@@ -125,7 +126,10 @@ bash scripts/run.sh --repeats 1 --budgets '' --settle-seconds 8 --sample-seconds
 `python3 scripts/benchmark.py --help` lists all options, including editor selection,
 budgets, durations, seed and output. Use the same protocol for comparisons.
 Results are checkpointed atomically after each trial. Do not combine trials from
-different hosts or configurations to manufacture a passing minimum.
+different hosts or configurations for the same editor to manufacture a passing
+minimum. CI combines complete per-editor runs from the same workflow and protocol,
+retaining each editor’s host metadata and capture time. Runner hardware can differ
+between editors as well as between dates.
 
 ## Development & CI
 
@@ -146,6 +150,15 @@ PRs run metric tests, all four desktop baseline smoke trials, report generation
 and browser checks. Pushes to main, weekly schedules and manual dispatch run the
 full sweep, upload raw evidence, and deploy Pages after the baseline and browser
 checks pass. Budget failures do not prevent publication. Baseline failures do.
-Actions runs are serialized; editors never compete with another benchmark editor.
+Each editor has its own parallel matrix job and uploads a separate results artifact,
+including screenshots and logs even on failure. A follow-up job waits for all editor
+jobs, downloads their artifacts, validates and combines the JSON, builds the charts,
+and runs browser checks. Missing or incomplete editor results fail aggregation;
+failed baseline trials remain available for diagnosis but block Pages deployment.
+Actions runs are serialized; editors never compete on the same benchmark runner.
+
+To combine downloaded per-editor artifacts locally, keep each artifact in its own
+subdirectory of `results/editors/`, then run `python3 scripts/combine.py` followed by
+`python3 scripts/build.py`. The combiner requires all four editors by default.
 
 The LVCE project maintains this benchmark. It does not predetermine the winner.

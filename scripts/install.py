@@ -1,4 +1,5 @@
 """Download only the exact, checksum-verified official builds in editors.lock.json."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -9,9 +10,18 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def install():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany')
+    args = parser.parse_args()
+    editors = json.loads((ROOT / 'editors.lock.json').read_text())
+    ids = args.editors.split(',')
+    if len(set(ids)) != len(ids) or set(ids) - {e['id'] for e in editors} - {'geany'}:
+        parser.error('Unknown or duplicate editor')
     target = ROOT / '.tmp/apps'
     target.mkdir(parents=True, exist_ok=True)
-    for editor in json.loads((ROOT / 'editors.lock.json').read_text()):
+    for editor in editors:
+        if editor['id'] not in ids:
+            continue
         archive = target / editor['archive']
         if not archive.exists():
             print('Downloading', editor['id'], editor['version'], flush=True)
