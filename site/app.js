@@ -24,7 +24,8 @@ async function main() {
   const limited = (s) => s.groups.find(g => g.budgetMiB === s.lowestTestedBudgetMiB && g.budgetMiB !== null)
   const failures = data.trials.filter(t => t.budgetMiB === null && t.status !== 'passed')
   $('status').textContent = failures.length ? `${failures.length} normal-memory trial(s) failed. Successful measurements below are partial; inspect the raw results and logs.` : data.protocol.repeats < 3 ? 'Smoke run: fewer than three repeats. No minimum-memory claim is made.' : ''
-  $('meta').textContent = `${data.capturedAt.slice(0,10)} · ${data.host.arch} · ${data.host.logicalCpus} logical CPUs · ${number(data.host.memory.MemTotal / 1048576)} GiB host RAM · ${data.protocol.repeats} repeats per condition · MiB throughout`
+  const hostDescription = data.hosts ? `${Object.keys(data.hosts).length} separate editor runners · host details below` : `${data.host.arch} · ${data.host.logicalCpus} logical CPUs · ${number(data.host.memory.MemTotal / 1048576)} GiB host RAM`
+  $('meta').textContent = `${data.capturedAt.slice(0,10)} · ${hostDescription} · ${data.protocol.repeats} repeats per condition · MiB throughout`
   const lvce = data.summaries.find(s=>s.editor==='lvce')
   const idle = lvce && normal(lvce)?.metrics.pss
   const low = lvce?.lowestTestedBudgetMiB
@@ -61,7 +62,7 @@ async function main() {
     $('timeline').innerHTML=svg('Memory timeline for the selected trial',w,h,content)
   }
   $('trial').addEventListener('change',timeline);timeline()
-  $('environment').textContent=JSON.stringify({host:data.host,protocol:data.protocol,editors:data.editors,commit:data.commit,fixtureSha256:data.fixtureSha256},null,2)
+  $('environment').textContent=JSON.stringify({host:data.host,hosts:data.hosts,capturedAtByEditor:data.capturedAtByEditor,protocol:data.protocol,editors:data.editors,commit:data.commit,fixtureSha256:data.fixtureSha256},null,2)
   if (data.runUrl?.startsWith('https://github.com/levivilet/lvce-memory-benchmark/actions/runs/')) { $('run-link').href=data.runUrl; $('run-link').hidden=false }
 }
 main().catch(error=>{$('status').textContent=`Could not load benchmark results: ${error.message}. No example or estimated values are displayed.`; console.error(error)})

@@ -14,7 +14,45 @@ concurrency:
 jobs:
   benchmark:
     runs-on: ubuntu-24.04
-    timeout-minutes: 100
+    name: Benchmark (${{ matrix.editor }})
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        editor: [lvce, vscode, zed, geany]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1
+      - name: Download checksum-pinned official releases
+        run: python3 scripts/install.py --editors "${{ matrix.editor }}"
+      - name: Run isolated desktop trials
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BENCHMARK_COMMIT: ${{ github.sha }}
+          BENCHMARK_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            bash scripts/run.sh --editors "${{ matrix.editor }}" --repeats 1 --budgets '256' --settle-seconds 10 --sample-seconds 4 --probes 1
+          else
+            bash scripts/run.sh --editors "${{ matrix.editor }}"
+          fi
+      - name: Upload editor results and diagnostics
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: memory-results-${{ matrix.editor }}
+          path: results/
+          if-no-files-found: error
+          retention-days: 90
+  report:
+    name: Combined report
+    needs: benchmark
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -24,25 +62,14 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
-      - name: Install desktop dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1
-      - name: Download checksum-pinned official releases
-        run: python3 scripts/install.py
-      - name: Run isolated desktop trials
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BENCHMARK_COMMIT: ${{ github.sha }}
-          BENCHMARK_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
-            bash scripts/run.sh --repeats 1 --budgets '256' --settle-seconds 10 --sample-seconds 4 --probes 1
-          else
-            bash scripts/run.sh
-          fi
+      - name: Download all editor results
+        uses: actions/download-artifact@v5
+        with:
+          pattern: memory-results-*
+          path: results/editors
+      - name: Combine editor results
+        run: python3 scripts/combine.py
       - name: Build measured report
-        if: always()
         run: python3 scripts/build.py
       - name: Install browser for report checks
         run: npx playwright install --with-deps chromium
@@ -58,12 +85,12 @@ jobs:
             .tmp/report-*.png
           retention-days: 90
       - uses: actions/upload-pages-artifact@v4
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: needs.benchmark.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: .tmp/pages
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: benchmark
+    needs: [benchmark, report]
     runs-on: ubuntu-24.04
     permissions:
       pages: write

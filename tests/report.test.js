@@ -15,7 +15,15 @@ test('measured report renders and responds to filters on desktop and mobile', as
     page.on('pageerror',e=>errors.push(e.message))
     await page.goto('http://127.0.0.1:8765/')
     await page.waitForSelector('#normal-table tr')
-    assert.ok(await page.locator('#normal-table tr').count() >= 1)
+    const data = await (await fetch('http://127.0.0.1:8765/results.json')).json()
+    assert.equal(await page.locator('#normal-table tr').count(), data.editors.length)
+    assert.equal(await page.locator('#trial option').count(), data.trials.length)
+    if (data.hosts) {
+      assert.ok((await page.locator('#meta').textContent()).includes(`${data.editors.length} separate editor runners`))
+      const environment = JSON.parse(await page.locator('#environment').textContent())
+      assert.deepEqual(environment.hosts, data.hosts)
+      assert.deepEqual(Object.keys(environment.hosts).sort(), data.editors.map(e => e.id).sort())
+    }
     const before=await page.locator('#normal-chart').innerHTML()
     await page.selectOption('#metric','rss')
     assert.notEqual(await page.locator('#normal-chart').innerHTML(),before)
