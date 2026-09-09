@@ -26,5 +26,44 @@
     "url": "https://github.com/zed-industries/zed/releases/download/v1.18.1/zed-linux-x86_64.tar.gz",
     "sha256": "eea62268d8ec5fd3587df06fa76e072c104cca5e0b0b0abecbc28ae5b87c0bad",
     "binary": "zed.app/libexec/zed-editor"
+  },
+  {
+    "id": "eclipse",
+    "name": "Eclipse SDK",
+    "version": "4.36",
+    "archive": "eclipse-SDK-4.36-linux-gtk-x86_64.tar.gz",
+    "url": "https://archive.eclipse.org/eclipse/downloads/drops4/R-4.36-202505281830/eclipse-SDK-4.36-linux-gtk-x86_64.tar.gz",
+    "sha256": "59df744a4c1405200e10c87e430ec04da3e61f0f7cad59b22da934335d21d4bc",
+    "binary": "eclipse/eclipse",
+    "notes": "Eclipse SDK with a fresh empty workspace; external plain-text file. Uses the Ubuntu OpenJDK 21 runtime."
+  },
+  {
+    "id": "idea",
+    "name": "IntelliJ IDEA CE",
+    "version": "2025.2.6.3",
+    "archive": "ideaIC-2025.2.6.3.tar.gz",
+    "url": "https://download.jetbrains.com/idea/ideaIC-2025.2.6.3.tar.gz",
+    "sha256": "f9bb0c6e7de99becbd738937dd521864ee2226965331222d51fb3d921575fb00",
+    "binary": "idea-IC-252.28539.97/bin/idea.sh",
+    "notes": "JetBrains IntelliJ IDEA Community Edition, LightEdit single-file mode with bundled JetBrains Runtime; no project indexing."
+  },
+  {
+    "id": "atom",
+    "name": "Atom (archived)",
+    "version": "1.60.0",
+    "archive": "atom-amd64.deb",
+    "url": "https://github.com/atom/atom/releases/download/v1.60.0/atom-amd64.deb",
+    "sha256": "5c7c0259062b9d4911d2537bfceaff5316f9de111698840a90d7cd497df891a6",
+    "binary": "usr/share/atom/atom",
+    "notes": "Archived editor; historical comparison using its final stable release."
+  },
+  {
+    "id": "lapce",
+    "name": "Lapce",
+    "version": "0.4.6",
+    "archive": "lapce-linux-amd64.tar.gz",
+    "url": "https://github.com/lapce/lapce/releases/download/v0.4.6/lapce-linux-amd64.tar.gz",
+    "sha256": "7a0945e6862bbe207316ba05ac5d634fc8a55069b61e4ec8989af632250d0984",
+    "binary": "Lapce/lapce"
   }
 ]

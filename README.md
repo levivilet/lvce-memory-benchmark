@@ -1,13 +1,26 @@
 # LVCE Memory Benchmark
 
 Reproducible **desktop application** memory comparisons for LVCE Editor, VS Code,
-Zed, and Geany, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
+Zed, Geany, Eclipse SDK, IntelliJ IDEA Community Edition, Atom, and Lapce, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
 
 The report shows normal PSS/USS/RSS, cgroup memory and peak, anonymous/file/kernel
 breakdowns, an explicit pass/fail budget sweep, edit/save checks, and per-trial
 memory timelines. Downloadable JSON contains every attempt, exact versions,
 download URLs and hashes, host details, process samples, OOM counters and protocol.
 Screenshots and application logs are in each Actions run's artifact.
+
+Atom 1.60.0 is included as a historical comparison of an archived editor. The
+JetBrains entry is **IntelliJ IDEA Community Edition 2025.2.6.3**, not a combined
+measurement of all JetBrains products. Eclipse uses the **4.36 SDK** distribution.
+These are single-file measurements, not comparisons of full IDE project workloads.
+First-run welcome screens and optional data-sharing prompts are preconfigured;
+IntelliJ's bundled privacy notice is acknowledged in the disposable profile with
+optional data sharing disabled.
+
+Official references: [Atom release](https://github.com/atom/atom/releases/tag/v1.60.0),
+[Lapce release](https://github.com/lapce/lapce/releases/tag/v0.4.6),
+[Eclipse SDK release](https://archive.eclipse.org/eclipse/downloads/drops4/R-4.36-202505281830/),
+[IntelliJ LightEdit](https://www.jetbrains.com/help/idea/lightedit-mode.html).
 
 ## What “minimum” means here
 
@@ -40,6 +53,9 @@ monitor's accounting method. These results cannot diagnose that difference.
 - One editor at a time, with all trials shuffled once using recorded seed 1729.
   A fresh HOME, profile and config per trial; no user-installed extensions. VS Code
   additionally uses `--disable-extensions`; built-in application components remain.
+  Eclipse uses an empty workspace and Ubuntu OpenJDK 21 (the package version is recorded).
+  IntelliJ IDEA CE uses LightEdit mode and its bundled JetBrains Runtime.
+  Java user settings are isolated too; vendor JVM defaults remain unchanged.
   Telemetry/updaters are disabled where configured. AI features are disabled in VS Code and Zed.
 - Each trial opens the same 2,600-byte, 100-line plain-text file. No project folder,
   language server, plugin workload or project indexing. The fixture hash is recorded.
@@ -109,7 +125,7 @@ It does not modify your editor profiles or use your desktop display.
 sudo apt-get update
 sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox \
   geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 \
-  libgtk-3-0 libnss3 libgbm1
+  libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre
 python3 scripts/install.py
 bash scripts/run.sh
 python3 scripts/build.py
@@ -142,7 +158,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-PRs run metric tests, all four desktop baseline smoke trials, report generation
+PRs run metric tests, all eight desktop baseline smoke trials, report generation
 and browser checks. Pushes to main, weekly schedules and manual dispatch run the
 full sweep, upload raw evidence, and deploy Pages after the baseline and browser
 checks pass. Budget failures do not prevent publication. Baseline failures do.

@@ -14,7 +14,7 @@ concurrency:
 jobs:
   benchmark:
     runs-on: ubuntu-24.04
-    timeout-minutes: 100
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -27,7 +27,7 @@ jobs:
       - name: Install desktop dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1
+          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre
       - name: Download checksum-pinned official releases
         run: python3 scripts/install.py
       - name: Run isolated desktop trials
