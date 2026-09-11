@@ -11,6 +11,21 @@ import benchmark
 
 
 class InteractionTests(unittest.TestCase):
+    def test_theia_setup_does_not_type_until_file_chooser_appears(self):
+        with patch('benchmark.window_for', side_effect=['editor', None]), \
+                patch('benchmark.time.monotonic', side_effect=[0, 6]), \
+                patch('benchmark.run') as run:
+            with self.assertRaisesRegex(TimeoutError, 'file chooser did not appear'):
+                benchmark.open_theia_file(Path('/group'), Path('/fixture.txt'), 5)
+            self.assertFalse(any('type' in call.args[0] for call in run.call_args_list))
+
+    def test_theia_setup_requires_the_fixture_window(self):
+        with patch('benchmark.window_for', side_effect=['editor', 'chooser']), \
+                patch('benchmark.time.monotonic', side_effect=[0, 6]), \
+                patch('benchmark.run'):
+            with self.assertRaisesRegex(TimeoutError, 'did not open the fixture'):
+                benchmark.open_theia_file(Path('/group'), Path('/fixture.txt'), 5)
+
     def test_editors_without_file_titles_keep_owned_window_selection(self):
         search = subprocess.CompletedProcess([], 0, stdout='editor\n')
         with patch('benchmark.pids', return_value=[42]), \

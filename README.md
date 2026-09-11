@@ -15,7 +15,10 @@ measurement of all JetBrains products. Eclipse uses the **4.36 SDK** distributio
 Eclipse Theia IDE uses the official **1.75.0 Debian package**, including its bundled
 plugins, with a fresh Theia configuration and Electron profile. Automatic update
 checks and the startup welcome editor are disabled. It is a separate application
-from Eclipse SDK. [Pinned Theia release](https://download.eclipse.org/theia/ide/1.75.0/linux/latest-linux.yml).
+from Eclipse SDK. Its CLI accepts workspaces, so setup opens the external file
+through the native file chooser and verifies the filename in the window title
+before the common readiness probe. File-open setup has the same five-second
+deadline as a probe; its process memory is included in the cgroup peak. [Pinned Theia release](https://download.eclipse.org/theia/ide/1.75.0/linux/latest-linux.yml).
 These are single-file measurements, not comparisons of full IDE project workloads.
 First-run welcome screens and optional data-sharing prompts are preconfigured;
 IntelliJ's bundled Community Edition terms and privacy notice are acknowledged in the disposable profile with

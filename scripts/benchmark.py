@@ -125,6 +125,29 @@ def window_for(group, title=None):
     return None
 
 
+def open_theia_file(group, file, timeout):
+    """Open an external file without introducing a workspace/indexing workload."""
+    started = time.monotonic()
+    window = window_for(group)
+    if not window:
+        raise TimeoutError('No Theia window for file-open setup')
+    run(['xdotool', 'windowactivate', '--sync', window])
+    run(['xdotool', 'key', '--clearmodifiers', 'ctrl+o'])
+    while not window_for(group, 'Open File'):
+        if time.monotonic() - started >= timeout:
+            raise TimeoutError('Theia file chooser did not appear')
+        time.sleep(.05)
+    # GTK's native chooser exposes a location entry with Ctrl+L.
+    run(['xdotool', 'key', '--clearmodifiers', 'ctrl+l'])
+    run(['xdotool', 'type', '--clearmodifiers', '--delay', '10', str(file)])
+    run(['xdotool', 'key', '--clearmodifiers', 'alt+o'])
+    while time.monotonic() - started < timeout:
+        if window_for(group, file.name):
+            return
+        time.sleep(.05)
+    raise TimeoutError('Theia did not open the fixture before the setup deadline')
+
+
 def probe(group, file, marker, timeout, window_title=None):
     started = time.monotonic()
     while time.monotonic() - started < timeout:
@@ -206,8 +229,11 @@ def trial(editor, budget, repeat, args, user):
         file = home / 'memory-benchmark.txt'
         file.write_text(FIXTURE)
         # IDEA creates transient startup windows; other editors may not title their file.
-        window_title = file.name if editor['id'] == 'idea' else None
-        command = [editor['command'], *profile_config(editor, home), file]
+        window_title = file.name if editor['id'] in ('idea', 'theia') else None
+        command = [editor['command'], *profile_config(editor, home)]
+        # Theia's positional argument selects a workspace, not an external file.
+        if editor['id'] != 'theia':
+            command.append(file)
         if editor['id'] == 'eclipse':
             # The native launcher delivers --launcher.openFile through D-Bus.
             # Keep its private session bus inside the measured application cgroup.
@@ -253,7 +279,7 @@ def trial(editor, budget, repeat, args, user):
                 raise RuntimeError('Memory budget was not applied')
             window = None
             while time.monotonic() - started < args.startup_timeout:
-                window = window_for(group, window_title)
+                window = window_for(group, None if editor['id'] == 'theia' else window_title)
                 if window:
                     break
                 if not pids(group):
@@ -264,6 +290,8 @@ def trial(editor, budget, repeat, args, user):
             result['windowMs'] = (time.monotonic() - started) * 1000
             # Same fixed settling period for every application, then verify actual editing.
             time.sleep(args.settle_seconds)
+            if editor['id'] == 'theia':
+                open_theia_file(group, file, args.probe_timeout)
             marker = 'ready-' + uuid.uuid4().hex
             result['probeMs'].append(probe(group, file, marker, args.probe_timeout, window_title))
             result['readyMs'] = (time.monotonic() - started) * 1000
