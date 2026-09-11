@@ -1,7 +1,7 @@
 # LVCE Memory Benchmark
 
 Reproducible **desktop application** memory comparisons for LVCE Editor, VS Code,
-Zed, Geany, Eclipse SDK, IntelliJ IDEA Community Edition, Atom, and Lapce, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
+Zed, Geany, Eclipse SDK, IntelliJ IDEA Community Edition, Atom, Lapce, and Eclipse Theia IDE, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
 
 The report shows normal PSS/USS/RSS, cgroup memory and peak, anonymous/file/kernel
 breakdowns, an explicit pass/fail budget sweep, edit/save checks, and per-trial
@@ -12,6 +12,13 @@ Screenshots and application logs are in each Actions run's artifact.
 Atom 1.60.0 is included as a historical comparison of an archived editor. The
 JetBrains entry is **IntelliJ IDEA Community Edition 2025.2.6.3**, not a combined
 measurement of all JetBrains products. Eclipse uses the **4.36 SDK** distribution.
+Eclipse Theia IDE uses the official **1.75.0 Debian package**, including its bundled
+plugins, with a fresh Theia configuration and Electron profile. Automatic update
+checks and the startup welcome editor are disabled. It is a separate application
+from Eclipse SDK. Its CLI accepts workspaces, so setup opens the external file
+through the native file chooser and verifies the filename in the window title
+before the common readiness probe. File-open setup has the same five-second
+deadline as a probe; its process memory is included in the cgroup peak. [Pinned Theia release](https://download.eclipse.org/theia/ide/1.75.0/linux/latest-linux.yml).
 These are single-file measurements, not comparisons of full IDE project workloads.
 First-run welcome screens and optional data-sharing prompts are preconfigured;
 IntelliJ's bundled Community Edition terms and privacy notice are acknowledged in the disposable profile with
@@ -199,6 +206,6 @@ Actions runs for the same branch are serialized; editors never compete on the sa
 
 To combine downloaded per-editor artifacts locally, keep each artifact in its own
 subdirectory of `results/editors/`, then run `python3 scripts/combine.py` followed by
-`python3 scripts/build.py`. The combiner requires all eight editors by default.
+`python3 scripts/build.py`. The combiner requires all nine editors by default.
 
 The LVCE project maintains this benchmark. It does not predetermine the winner.

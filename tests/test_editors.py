@@ -13,7 +13,7 @@ class EditorProfiles(unittest.TestCase):
     def test_every_locked_editor_has_an_isolated_launch_adapter(self):
         root = Path(__file__).resolve().parents[1]
         editors = json.loads((root / 'editors.lock.json').read_text())
-        self.assertTrue({'eclipse', 'idea', 'atom', 'lapce'} <= {e['id'] for e in editors})
+        self.assertTrue({'eclipse', 'idea', 'atom', 'lapce', 'theia'} <= {e['id'] for e in editors})
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             installation = base / 'installation'
