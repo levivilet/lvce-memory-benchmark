@@ -24,6 +24,13 @@ test('measured report renders and responds to filters on desktop and mobile', as
       assert.deepEqual(environment.hosts, data.hosts)
       assert.deepEqual(Object.keys(environment.hosts).sort(), data.editors.map(e => e.id).sort())
     }
+    const budgets = data.summaries[0].groups.filter(g => g.budgetMiB !== null).map(g => g.budgetMiB)
+    assert.deepEqual(await page.locator('#budget-head th').allTextContents(), ['Editor', ...budgets.map(b => `${b} MiB`)])
+    for (const [index, summary] of data.summaries.entries()) {
+      const groups = summary.groups.filter(g => g.budgetMiB !== null)
+      const cells = await page.locator('#budget-table tr').nth(index).locator('td').allTextContents()
+      assert.deepEqual(cells.slice(1), groups.map(g => g.attempted ? `${g.passed}/${g.attempted}` : '—'))
+    }
     const before=await page.locator('#normal-chart').innerHTML()
     await page.selectOption('#metric','rss')
     assert.notEqual(await page.locator('#normal-chart').innerHTML(),before)

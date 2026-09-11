@@ -53,6 +53,7 @@ def distribution(values):
 
 
 def summarize(trials, repeats, budgets):
+    budgets = sorted(set(budgets) | {t["budgetMiB"] for t in trials if t["budgetMiB"] is not None})
     summaries = []
     for editor in dict.fromkeys(t['editor'] for t in trials):
         rows = [t for t in trials if t['editor'] == editor]
@@ -73,5 +74,5 @@ def summarize(trials, repeats, budgets):
         qualified = [g['budgetMiB'] for g in groups if g['budgetMiB'] is not None and g['qualified']]
         minimum = min(qualified) if qualified and repeats >= 3 else None
         summaries.append(dict(editor=editor, groups=groups, lowestTestedBudgetMiB=minimum,
-                              atLowerBoundary=minimum == min(budgets) if minimum else False))
+                              atLowerBoundary=minimum == min(t["budgetMiB"] for t in rows if t["budgetMiB"] is not None) if minimum else False))
     return summaries

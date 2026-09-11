@@ -18,6 +18,7 @@ import time
 import uuid
 
 from metrics import counters, pids, sample, summarize
+from refinement import next_budget
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = 'Memory benchmark fixture.\n' * 100
@@ -308,6 +309,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce')
     parser.add_argument('--repeats', type=int, default=3)
+    parser.add_argument('--refinement-iterations', type=int, default=10,
+                        help='Midpoint budgets per editor after the sweep (0 disables; stops at 1 MiB precision)')
     parser.add_argument('--budgets', default='64,128,192,256,320,384,512,768,1024')
     parser.add_argument('--settle-seconds', type=int, default=10)
     parser.add_argument('--sample-seconds', type=int, default=10)
@@ -320,6 +323,8 @@ def main():
     budgets = sorted(set(int(n) for n in args.budgets.split(',') if n))
     if any(n <= 0 for n in [args.repeats, args.settle_seconds, args.sample_seconds, args.probes, args.startup_timeout, args.probe_timeout, *budgets]) or args.sample_seconds < 2:
         parser.error('Counts, durations and budgets must be positive; sampling requires at least 2 seconds')
+    if not 0 <= args.refinement_iterations <= 10:
+        parser.error('Refinement iterations must be between 0 and 10')
     if os.geteuid() != 0 or not os.environ.get('SUDO_USER') or os.environ['SUDO_USER'] == 'root':
         parser.error('Use sudo from a non-root account; only the observer runs as root')
     for key in ['DISPLAY', 'XAUTHORITY']:
@@ -362,6 +367,19 @@ def main():
         data['summaries'] = summarize(data['trials'], args.repeats, budgets)
         write_json(args.output, data)
         print(outcome['status'], outcome['error'] or '', flush=True)
+    for editor in editors:
+        for _ in range(args.refinement_iterations):
+            rows = [t for t in data['trials'] if t['editor'] == editor['id']]
+            budget = next_budget(rows, args.repeats)
+            if budget is None:
+                break
+            for repeat in range(1, args.repeats + 1):
+                print(f"{editor['name']} / refinement {budget} MiB / repeat {repeat}", flush=True)
+                outcome = trial(editor, budget, repeat, args, user)
+                data['trials'].append(outcome)
+                data['summaries'] = summarize(data['trials'], args.repeats, budgets)
+                write_json(args.output, data)
+                print(outcome['status'], outcome['error'] or '', flush=True)
     # Low-budget failures are expected observations. A broken baseline is a CI failure.
     if any(t['status'] != 'passed' for t in data['trials'] if t['budgetMiB'] is None):
         raise SystemExit('At least one normal-memory baseline failed; inspect artifacts before publishing claims')

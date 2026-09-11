@@ -27,8 +27,13 @@ Official references: [Atom release](https://github.com/atom/atom/releases/tag/v1
 **Lowest tested memory budget that successfully launches and edits/saves the same
 file in every repeat (at least three), without swap or any OOM event.** This is a
 workload-specific operating point, not a universal minimum or a claim about
-large projects. All specified budgets are tested; no monotonic behavior is assumed.
-When the lowest sweep value passes, the report says ≤ because lower limits remain
+large projects. All specified sweep budgets are tested. Then up to ten midpoint budgets per editor
+refine the interval below its lowest passing budget, stopping at 1 MiB precision.
+Each midpoint gets all repeats; one failure moves the lower search bound. If the
+lowest sweep budget passes, search continues toward 1 MiB. If no capped budget
+passes, no refinement is possible. Binary search guides sampling, but memory
+behavior can be nonmonotonic: untested budgets are never inferred to pass or fail.
+When the lowest tested value passes, the report says ≤ because lower limits remain
 untested. Fewer than three repeats can only generate a smoke report.
 
 The normal benchmark has no application memory cap, but also disables swap.
@@ -50,7 +55,8 @@ monitor's accounting method. These results cannot diagnose that difference.
   from Ubuntu's package repository and its exact distribution version is recorded.
   To update an official build, update its version, immutable URL, hash and binary
   path together. Downloads never silently follow `latest` during a benchmark.
-- One editor per CI runner, with its trials shuffled once using recorded seed 1729.
+- One editor per CI runner, with its initial sweep trials shuffled once using recorded seed 1729.
+  Adaptive refinement follows the sweep, in decision order.
   Editors run in parallel on separate runners; local runs use one editor at a time.
   A fresh HOME, profile and config per trial; no user-installed extensions. VS Code
   additionally uses `--disable-extensions`; built-in application components remain.
@@ -100,7 +106,9 @@ monitor's accounting method. These results cannot diagnose that difference.
   host load remain limitations even with randomized trial order.
 
 Default sweep: **64, 128, 192, 256, 320, 384, 512, 768, 1024 MiB**, plus uncapped; three
-fresh runs per condition. All editors use the same grid and timing thresholds.
+fresh runs per condition, followed by up to ten refinement budgets per editor.
+All editors use the same initial grid, search rule and timing thresholds.
+Use `--refinement-iterations 0` to disable refinement (maximum/default: 10).
 The probe checks functionality, not typing-to-paint latency; use the
 [typing benchmark](https://levivilet.github.io/lvce-typing-benchmark/) for that.
 
@@ -171,7 +179,7 @@ npm run test:browser
 ```
 
 PRs run metric and interaction tests, three fresh trials per editor at normal memory
-and 256 MiB, report generation and browser checks. Each trial performs ten probes
+and 256/512 MiB plus up to two refinement budgets, report generation and browser checks. Each trial performs ten probes
 after readiness to exercise repeated edit/save/restore interactions.
 Pushes to main, weekly schedules and manual dispatch run the
 full sweep, upload raw evidence, and deploy Pages after the baseline and browser
