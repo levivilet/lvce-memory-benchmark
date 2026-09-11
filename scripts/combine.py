@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from metrics import summarize
+from refinement import validate_trials
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -29,12 +30,7 @@ def combine(results, expected_editors):
             raise ValueError(f'Duplicate or unexpected editor: {editor}')
         if data['protocol']['editors'] != editor:
             raise ValueError('Editor selection does not match artifact')
-        expected = {(editor, budget, repeat)
-                    for budget in [None, *protocol['budgets']]
-                    for repeat in range(1, protocol['repeats'] + 1)}
-        actual = [(t['editor'], t['budgetMiB'], t['repeat']) for t in data['trials']]
-        if set(actual) != expected or len(actual) != len(expected):
-            raise ValueError(f'Incomplete or duplicate trials for {editor}')
+        validate_trials(data['trials'], editor, protocol)
         by_editor[editor] = data
     if set(by_editor) != set(expected_editors):
         raise ValueError(f'Missing editor results: {sorted(set(expected_editors) - set(by_editor))}')
