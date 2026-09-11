@@ -51,6 +51,12 @@ def profile_config(editor, home):
         return ['--user-data-dir', data, '--extensions-dir', home / 'extensions', '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--new-window', '--no-sandbox', '--ozone-platform=x11']
     if editor['id'] == 'lvce':
         return ['--user-data-dir', data, '--no-sandbox', '--ozone-platform=x11']
+    if editor['id'] == 'theia':
+        write_json(home / '.theia-ide/settings.json', {
+            'workbench.startupEditor': 'none', 'files.autoSave': 'off',
+            'updates.checkForUpdates': False, 'security.workspace.trust.enabled': False,
+        })
+        return ['--electronUserData', data, '--no-sandbox', '--ozone-platform=x11']
     if editor['id'] == 'zed':
         return ['--user-data-dir', data]
     if editor['id'] == 'geany':
@@ -219,6 +225,9 @@ def trial(editor, budget, repeat, args, user):
             env['JAVA_TOOL_OPTIONS'] = f'-Duser.home={home}'
         if editor['id'] == 'idea':
             env['IDEA_PROPERTIES'] = str(home / 'idea.properties')
+        if editor['id'] == 'theia':
+            env['THEIA_CONFIG_DIR'] = str(home / '.theia-ide')
+            env['THEIA_NO_SPLASH'] = '1'
         if editor['id'] == 'atom':
             env['ATOM_HOME'] = str(home / '.atom')
         launch = ['systemd-run', '--quiet', '--unit', unit, '--service-type=exec',
@@ -307,7 +316,7 @@ def trial(editor, budget, repeat, args, user):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce')
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce,theia')
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--refinement-iterations', type=int, default=10,
                         help='Midpoint budgets per editor after the sweep (0 disables; stops at 1 MiB precision)')

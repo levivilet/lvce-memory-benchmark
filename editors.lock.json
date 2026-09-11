@@ -65,5 +65,15 @@
     "url": "https://github.com/lapce/lapce/releases/download/v0.4.6/lapce-linux-amd64.tar.gz",
     "sha256": "7a0945e6862bbe207316ba05ac5d634fc8a55069b61e4ec8989af632250d0984",
     "binary": "Lapce/lapce"
+  },
+  {
+    "id": "theia",
+    "name": "Eclipse Theia IDE",
+    "version": "1.75.0",
+    "archive": "TheiaIDE-1.75.0.deb",
+    "url": "https://download.eclipse.org/theia/ide/1.75.0/linux/TheiaIDE.deb",
+    "sha256": "78120bd47d02e8f9537a017c76e37a89cef2230ed486244e42bbdee9e9c38225",
+    "binary": "opt/TheiaIDE/theia-ide-electron-app",
+    "notes": "Packaged Eclipse Theia IDE with bundled plugins, isolated configuration and Electron profile; external plain-text file. Separate from Eclipse SDK."
   }
 ]
