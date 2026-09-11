@@ -26,8 +26,40 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool xclip openbox geany imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 openjdk-21-jre dbus
+      - name: Resolve editor archive cache
+        if: matrix.editor != 'geany'
+        id: archive
+        env:
+          EDITOR: ${{ matrix.editor }}
+        run: |
+          python3 - <<'PYTHON'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          editors = json.loads(Path('editors.lock.json').read_text())
+          editor = next(editor for editor in editors if editor['id'] == os.environ['EDITOR'])
+          fingerprint = hashlib.sha256(json.dumps(editor, sort_keys=True).encode()).hexdigest()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              print(f"path=.tmp/apps/{editor['archive']}", file=output)
+              print(f"key=ide-archive-v1-{editor['id']}-{fingerprint}", file=output)
+          PYTHON
+      - name: Restore editor archive
+        if: matrix.editor != 'geany'
+        id: archive-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.archive.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.archive.outputs.key }}
       - name: Download checksum-pinned official releases
         run: python3 scripts/install.py --editors "${{ matrix.editor }}"
+      - name: Save verified editor archive
+        if: matrix.editor != 'geany' && steps.archive-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.archive.outputs.path }}
+          key: ${{ steps.archive-cache.outputs.cache-primary-key }}
       - name: Run isolated desktop trials
         env:
           EVENT_NAME: ${{ github.event_name }}

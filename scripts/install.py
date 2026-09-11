@@ -26,7 +26,8 @@ def install():
         if not archive.exists():
             print('Downloading', editor['id'], editor['version'], flush=True)
             subprocess.run(['curl', '--fail', '--location', '--retry', '3', '--output', str(archive), editor['url']], check=True)
-        digest = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+        with archive.open('rb') as source:
+            digest = hashlib.file_digest(source, 'sha256').hexdigest()
         if digest != editor['sha256']:
             raise ValueError(f"Checksum mismatch: {archive}; remove it and retry")
         destination = target / editor['id']

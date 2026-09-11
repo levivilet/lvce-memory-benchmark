@@ -184,6 +184,12 @@ after readiness to exercise repeated edit/save/restore interactions.
 Pushes to main, weekly schedules and manual dispatch run the
 full sweep, upload raw evidence, and deploy Pages after the baseline and browser
 checks pass. Budget failures do not prevent publication. Baseline failures do.
+Official release archives are cached separately per editor, runner OS/architecture,
+and that editor's lock entry. Updating one editor leaves the other caches reusable.
+Restored archives are still checksum-verified and freshly extracted on every run;
+only verified archives are saved, before trials start. Profiles, extracted apps and
+results are not cached. Geany continues to be installed through apt.
+
 Each editor has its own parallel matrix job and uploads a separate results artifact,
 including screenshots and logs even on failure. A follow-up job waits for all editor
 jobs, downloads their artifacts, validates and combines the JSON, builds the charts,
