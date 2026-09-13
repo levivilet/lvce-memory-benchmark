@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check site/app.js && python3 -m py_compile scripts/*.py",
+    "check": "node --check site/app.js && node --check basic-electron/main.js && node --check basic-electron/preload.js && node --check basic-electron/renderer.js && python3 -m py_compile scripts/*.py",
     "test": "python3 -m unittest discover -s tests",
     "test:browser": "node --test tests/report.test.js"
   },

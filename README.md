@@ -1,7 +1,7 @@
 # LVCE Memory Benchmark
 
 Reproducible **desktop application** memory comparisons for LVCE Editor, VS Code,
-Zed, Geany, Eclipse SDK, IntelliJ IDEA Community Edition, Atom, Lapce, and Eclipse Theia IDE, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
+Zed, Geany, Eclipse SDK, IntelliJ IDEA Community Edition, Atom, Lapce, Eclipse Theia IDE, and a minimal **Basic Electron** text editor, with a [GitHub Pages dashboard](https://levivilet.github.io/lvce-memory-benchmark/).
 
 The report shows normal PSS/USS/RSS, cgroup memory and peak, anonymous/file/kernel
 breakdowns, an explicit pass/fail budget sweep, edit/save checks, and per-trial
@@ -19,6 +19,12 @@ from Eclipse SDK. Its CLI accepts workspaces, so setup opens the external file
 through the native file chooser and verifies the filename in the window title
 before the common readiness probe. File-open setup has the same five-second
 deadline as a probe; its process memory is included in the cgroup peak. [Pinned Theia release](https://download.eclipse.org/theia/ide/1.75.0/linux/latest-linux.yml).
+Basic Electron uses the pinned **Electron 40.0.0** Linux x64 runtime and the
+checked-in `basic-electron/` app. Its main process reads and writes the single
+fixture through a narrow preload API; the renderer contains only a textarea,
+Save button, status, and Ctrl+S handler. The benchmark records the source commit
+alongside the runtime version. This is a deliberately small Electron baseline,
+not a general-purpose editor.
 These are single-file measurements, not comparisons of full IDE project workloads.
 First-run welcome screens and optional data-sharing prompts are preconfigured;
 IntelliJ's bundled Community Edition terms and privacy notice are acknowledged in the disposable profile with
@@ -206,6 +212,6 @@ Actions runs for the same branch are serialized; editors never compete on the sa
 
 To combine downloaded per-editor artifacts locally, keep each artifact in its own
 subdirectory of `results/editors/`, then run `python3 scripts/combine.py` followed by
-`python3 scripts/build.py`. The combiner requires all nine editors by default.
+`python3 scripts/build.py`. The combiner requires all ten editors by default.
 
 The LVCE project maintains this benchmark. It does not predetermine the winner.

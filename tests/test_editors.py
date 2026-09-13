@@ -13,7 +13,7 @@ class EditorProfiles(unittest.TestCase):
     def test_every_locked_editor_has_an_isolated_launch_adapter(self):
         root = Path(__file__).resolve().parents[1]
         editors = json.loads((root / 'editors.lock.json').read_text())
-        self.assertTrue({'eclipse', 'idea', 'atom', 'lapce', 'theia'} <= {e['id'] for e in editors})
+        self.assertTrue({'eclipse', 'idea', 'atom', 'lapce', 'theia', 'basic-electron'} <= {e['id'] for e in editors})
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             installation = base / 'installation'
@@ -40,3 +40,23 @@ class EditorProfiles(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             with self.assertRaisesRegex(ValueError, 'Unsupported editor'):
                 profile_config({'id': 'unknown'}, Path(temporary))
+
+    def test_basic_electron_uses_the_checked_in_app_and_isolates_the_profile(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary:
+            args = profile_config({'id': 'basic-electron', 'app': 'basic-electron'}, Path(temporary))
+        self.assertIn(str(root / 'basic-electron'), ' '.join(map(str, args)))
+        self.assertIn('--no-sandbox', args)
+        self.assertIn('--ozone-platform=x11', args)
+
+    def test_basic_electron_keeps_file_io_in_the_main_process(self):
+        root = Path(__file__).resolve().parents[1]
+        main = (root / 'basic-electron/main.js').read_text()
+        renderer = (root / 'basic-electron/renderer.js').read_text()
+        html = (root / 'basic-electron/index.html').read_text()
+        self.assertIn("ipcMain.handle('read-file'", main)
+        self.assertIn("ipcMain.handle('write-file'", main)
+        self.assertIn('id="save"', html)
+        self.assertIn('id="editor"', html)
+        self.assertIn('writeFile(editor.value)', renderer)
+        self.assertIn("event.key.toLowerCase() === 's'", renderer)

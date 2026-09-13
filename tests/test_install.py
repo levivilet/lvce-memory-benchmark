@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import install
@@ -46,3 +47,21 @@ class ArchiveCache(unittest.TestCase):
 
     def test_corrupt_cache_is_rejected_before_extraction(self):
         self.assertEqual(self.run_installer(b'corrupt'), [])
+
+    def test_zip_archive_is_extracted_without_an_external_unzip_command(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / '.tmp/apps/editor.zip'
+            archive.parent.mkdir(parents=True)
+            with zipfile.ZipFile(archive, 'w') as source:
+                source.writestr('electron/editor', 'official release')
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            (root / 'editors.lock.json').write_text(json.dumps([{
+                'id': 'basic-electron', 'version': '1', 'archive': archive.name,
+                'url': 'https://example.invalid/editor.zip', 'sha256': digest,
+                'binary': 'electron/editor',
+            }]))
+            with patch.object(install, 'ROOT', root), patch.object(sys, 'argv', ['install.py', '--editors', 'basic-electron']), patch.object(install.subprocess, 'run') as run:
+                install.install()
+            run.assert_not_called()
+            self.assertEqual((root / '.tmp/apps/basic-electron/electron/editor').read_text(), 'official release')

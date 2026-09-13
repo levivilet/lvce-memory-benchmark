@@ -2,7 +2,7 @@ const $ = (id) => document.getElementById(id)
 const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const mib = (value) => value / 1048576
 const number = (value) => Number.isFinite(value) ? value.toLocaleString('en', {maximumFractionDigits: 1}) : '—'
-const color = (id) => ({lvce:'#823cc6',vscode:'#3284c7',zed:'#4d837c',geany:'#c18c3b',eclipse:'#57469a',idea:'#d34a70',atom:'#438658',lapce:'#246c9c',theia:'#14858a'}[id] || '#778195')
+const color = (id) => ({lvce:'#823cc6',vscode:'#3284c7',zed:'#4d837c',geany:'#c18c3b',eclipse:'#57469a',idea:'#d34a70',atom:'#438658',lapce:'#246c9c',theia:'#14858a','basic-electron':'#b85c2f'}[id] || '#778195')
 const svg = (title, width, height, content) => `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escape(title)}"><title>${escape(title)}</title>${content}</svg>`
 const fmt = (metric) => metric ? number(mib(metric.median)) : '—'
 function bars(rows, title, unit = 'MiB') {

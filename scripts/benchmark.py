@@ -51,6 +51,8 @@ def profile_config(editor, home):
         return ['--user-data-dir', data, '--extensions-dir', home / 'extensions', '--disable-extensions', '--skip-welcome', '--skip-release-notes', '--new-window', '--no-sandbox', '--ozone-platform=x11']
     if editor['id'] == 'lvce':
         return ['--user-data-dir', data, '--no-sandbox', '--ozone-platform=x11']
+    if editor['id'] == 'basic-electron':
+        return ['--no-sandbox', '--ozone-platform=x11', ROOT / editor['app']]
     if editor['id'] == 'theia':
         write_json(home / '.theia-ide/settings.json', {
             'workbench.startupEditor': 'none', 'files.autoSave': 'off',
@@ -344,7 +346,7 @@ def trial(editor, budget, repeat, args, user):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce,theia')
+    parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce,theia,basic-electron')
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--refinement-iterations', type=int, default=10,
                         help='Midpoint budgets per editor after the sweep (0 disables; stops at 1 MiB precision)')
@@ -384,6 +386,8 @@ def main():
     for editor in editors:
         if editor['id'] == 'eclipse':
             editor['runtime'] = run(['dpkg-query', '-W', '-f=${Version}', 'openjdk-21-jre-headless'])
+        if editor['id'] == 'basic-electron':
+            editor['sourceRevision'] = os.environ.get('BENCHMARK_COMMIT', 'local')
     protocol = {key: value for key, value in vars(args).items() if key != 'output'}
     protocol['budgets'] = budgets
     data = dict(schemaVersion=1, capturedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
