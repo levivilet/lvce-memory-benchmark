@@ -19,7 +19,10 @@ test('measured report renders and responds to filters on desktop and mobile', as
     assert.equal(await page.locator('#normal-table tr').count(), data.editors.length)
     assert.ok(data.editors.some(editor => editor.id === 'theia' && editor.name === 'Eclipse Theia IDE'))
     assert.match(await page.locator('#normal-table').textContent(), /Eclipse Theia IDE/)
+    assert.ok(data.editors.some(editor => editor.id === 'basic-electron' && editor.name === 'Basic Electron'))
+    assert.match(await page.locator('#normal-table').textContent(), /Basic Electron/)
     assert.ok((await page.locator('#trial option').allTextContents()).some(text => text.includes('Eclipse Theia IDE')))
+    assert.ok((await page.locator('#trial option').allTextContents()).some(text => text.includes('Basic Electron')))
     assert.equal(await page.locator('#trial option').count(), data.trials.length)
     if (data.hosts) {
       assert.ok((await page.locator('#meta').textContent()).includes(`${data.editors.length} separate editor runners`))

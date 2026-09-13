@@ -1,0 +1,5 @@
+{
+  "name": "lvce-memory-benchmark-basic-electron",
+  "private": true,
+  "main": "main.js"
+}

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        editor: [lvce, vscode, zed, geany, eclipse, idea, atom, lapce, theia]
+        editor: [lvce, vscode, zed, geany, eclipse, idea, atom, lapce, theia, basic-electron]
     steps:
       - uses: actions/checkout@v5
       - name: Install desktop dependencies

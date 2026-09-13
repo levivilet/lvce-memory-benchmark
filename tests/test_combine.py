@@ -9,7 +9,7 @@ from combine import combine
 
 class CombineTests(unittest.TestCase):
     def setUp(self):
-        self.editors = ['lvce', 'vscode', 'zed', 'geany', 'eclipse', 'idea', 'atom', 'lapce', 'theia']
+        self.editors = ['lvce', 'vscode', 'zed', 'geany', 'eclipse', 'idea', 'atom', 'lapce', 'theia', 'basic-electron']
         self.results = [dict(
             schemaVersion=1, commit='commit', runUrl='run', fixtureSha256='fixture',
             capturedAt=f'2026-09-09T00:00:0{index}Z', host=dict(cpu=f'CPU {index}'),
