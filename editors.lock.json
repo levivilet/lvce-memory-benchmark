@@ -6,7 +6,15 @@
     "archive": "lvce-v0.114.2_amd64.deb",
     "url": "https://github.com/lvce-editor/lvce-editor/releases/download/v0.114.2/lvce-v0.114.2_amd64.deb",
     "sha256": "27d8fd309117f4d3698431b2a46904778bd1e6e2f60e2a8f6501c3fdc946e4b9",
-    "binary": "usr/lib/lvce/lvce"
+    "binary": "usr/lib/lvce/lvce",
+    "runtime": {
+      "version": "Electron 44.3.0",
+      "archive": "electron-v44.3.0-linux-x64.zip",
+      "url": "https://github.com/electron/electron/releases/download/v44.3.0/electron-v44.3.0-linux-x64.zip",
+      "sha256": "8b49b9efdd73c0f467edc3c1cd5678392c384ccf224f34ff54179f736e2f384b",
+      "directory": "usr/lib/lvce"
+    },
+    "notes": "Official LVCE application resources with a checksum-pinned Electron 44.3.0 runtime override for comparison with Basic Electron; not the unmodified official binary."
   },
   {
     "id": "vscode",
@@ -79,10 +87,10 @@
   {
     "id": "basic-electron",
     "name": "Basic Electron",
-    "version": "Electron 40.0.0",
-    "archive": "electron-v40.0.0-linux-x64.zip",
-    "url": "https://github.com/electron/electron/releases/download/v40.0.0/electron-v40.0.0-linux-x64.zip",
-    "sha256": "2ac22df42a4368cdd93ff9f9f25c7f04b9157143a3a3a06d4f01ae0dbb4e6fd5",
+    "version": "Electron 44.3.0",
+    "archive": "electron-v44.3.0-linux-x64.zip",
+    "url": "https://github.com/electron/electron/releases/download/v44.3.0/electron-v44.3.0-linux-x64.zip",
+    "sha256": "8b49b9efdd73c0f467edc3c1cd5678392c384ccf224f34ff54179f736e2f384b",
     "binary": "electron",
     "app": "basic-electron",
     "notes": "Minimal single-file Electron text editor in this repository. The benchmark commit records the app source revision."
