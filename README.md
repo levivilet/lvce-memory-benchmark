@@ -64,7 +64,10 @@ monitor's accounting method. These results cannot diagnose that difference.
 
 - Linux x86-64, systemd ≥250, cgroup v2 with memory controller, X11. CI pins Ubuntu
   24.04; runner hardware is recorded, not assumed identical across dates.
-- Official, checksum-verified builds pinned in `editors.lock.json`. Geany comes
+- Checksum-verified builds pinned in `editors.lock.json`. LVCE keeps its official
+  v0.114.2 application resources but uses a pinned Electron 44.3.0 runtime override;
+  Basic Electron uses the same 44.3.0 archive. This LVCE entry is not the unmodified
+  official binary. Other editors retain their bundled runtimes. Geany comes
   from Ubuntu's package repository and its exact distribution version is recorded.
   To update an official build, update its version, immutable URL, hash and binary
   path together. Downloads never silently follow `latest` during a benchmark.
