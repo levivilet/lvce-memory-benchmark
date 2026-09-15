@@ -19,7 +19,7 @@ from Eclipse SDK. Its CLI accepts workspaces, so setup opens the external file
 through the native file chooser and verifies the filename in the window title
 before the common readiness probe. File-open setup has the same five-second
 deadline as a probe; its process memory is included in the cgroup peak. [Pinned Theia release](https://download.eclipse.org/theia/ide/1.75.0/linux/latest-linux.yml).
-Basic Electron uses the pinned **Electron 40.0.0** Linux x64 runtime and the
+Basic Electron uses the pinned **Electron 44.3.0** Linux x64 runtime and the
 checked-in `basic-electron/` app. Its main process reads and writes the single
 fixture through a narrow preload API; the renderer contains only a textarea,
 Save button, status, and Ctrl+S handler. The benchmark records the source commit
