@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 root = Path(__file__).resolve().parents[1]
-script = root / ('scripts/install.py' if (root / 'editors.lock.json').exists() else 'vendor/benchmark/scripts/install.py')
+script = root / ('scripts/install.py' if (root / 'config/editors.lock.json').exists() else 'vendor/benchmark/scripts/install.py')
 spec = importlib.util.spec_from_file_location('installer', script)
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)

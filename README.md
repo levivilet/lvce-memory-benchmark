@@ -64,7 +64,7 @@ monitor's accounting method. These results cannot diagnose that difference.
 
 - Linux x86-64, systemd ≥250, cgroup v2 with memory controller, X11. CI pins Ubuntu
   24.04; runner hardware is recorded, not assumed identical across dates.
-- Checksum-verified builds pinned in `editors.lock.json`. LVCE keeps its official
+- Checksum-verified builds pinned in `config/editors.lock.json`. LVCE keeps its official
   v0.114.2 application resources but uses a pinned Electron 44.3.0 runtime override;
   Basic Electron uses the same 44.3.0 archive. This LVCE entry is not the unmodified
   official binary. Other editors retain their bundled runtimes. Geany comes
@@ -188,7 +188,7 @@ npm run update:lvce
 The updater selects the exact `amd64.deb` asset from the GitHub release, downloads
 it to a temporary file, verifies the SHA-256 digest and required LVCE binary,
 then atomically updates only the LVCE version, archive, URL and checksum in
-`editors.lock.json`. It rejects drafts, prereleases, missing assets, malformed
+`config/editors.lock.json`. It rejects drafts, prereleases, missing assets, malformed
 packages and failed downloads without changing the lockfile. Use
 `npm run update:lvce -- --version 0.116.0` to select a specific stable release.
 

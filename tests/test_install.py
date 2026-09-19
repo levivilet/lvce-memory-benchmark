@@ -19,7 +19,8 @@ class ArchiveCache(unittest.TestCase):
             archive = root / '.tmp/apps/editor.tar.gz'
             archive.parent.mkdir(parents=True)
             data = b'official release archive'
-            (root / 'editors.lock.json').write_text(json.dumps([{
+            (root / 'config/editors.lock.json').parent.mkdir(parents=True)
+            (root / 'config/editors.lock.json').write_text(json.dumps([{
                 'id': 'lvce', 'version': '1', 'archive': archive.name,
                 'url': 'https://example.invalid/editor.tar.gz',
                 'sha256': hashlib.sha256(data).hexdigest(),
@@ -56,7 +57,8 @@ class ArchiveCache(unittest.TestCase):
             with zipfile.ZipFile(archive, 'w') as source:
                 source.writestr('electron/editor', 'official release')
             digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-            (root / 'editors.lock.json').write_text(json.dumps([{
+            (root / 'config/editors.lock.json').parent.mkdir(parents=True)
+            (root / 'config/editors.lock.json').write_text(json.dumps([{
                 'id': 'basic-electron', 'version': '1', 'archive': archive.name,
                 'url': 'https://example.invalid/editor.zip', 'sha256': digest,
                 'binary': 'electron/editor',

@@ -370,7 +370,7 @@ def main():
         if not os.environ.get(key):
             parser.error(f'Missing {key}; use scripts/run.sh on a dedicated Xvfb display')
     user = pwd.getpwnam(os.environ['SUDO_USER'])
-    editors = json.loads((ROOT / 'editors.lock.json').read_text())
+    editors = json.loads((ROOT / 'config/editors.lock.json').read_text())
     for editor in editors:
         editor['command'] = str(ROOT / '.tmp/apps' / editor['id'] / editor['binary'])
     if shutil.which('geany'):
