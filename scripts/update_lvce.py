@@ -145,7 +145,7 @@ def update_lockfile(path, release, archive_name, archive_url, archive_sha256):
 
 
 def update(version=None, lockfile=None):
-    path = Path(lockfile) if lockfile else ROOT / 'editors.lock.json'
+    path = Path(lockfile) if lockfile else ROOT / 'config/editors.lock.json'
     release = release_metadata(version)
     archive_name, archive_url = find_asset(release)
     with tempfile.TemporaryDirectory() as temporary:
@@ -162,7 +162,7 @@ def update(version=None, lockfile=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', help='Stable LVCE version to update to (default: latest published release)')
-    parser.add_argument('--lockfile', type=Path, default=ROOT / 'editors.lock.json', help='Lockfile to update')
+    parser.add_argument('--lockfile', type=Path, default=ROOT / 'config/editors.lock.json', help='Lockfile to update')
     args = parser.parse_args()
     try:
         update(args.version, args.lockfile)

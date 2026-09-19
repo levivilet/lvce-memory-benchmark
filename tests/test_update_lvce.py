@@ -26,7 +26,8 @@ class UpdateLvce(unittest.TestCase):
         }
 
     def lockfile(self, root):
-        path = root / 'editors.lock.json'
+        path = root / 'config/editors.lock.json'
+        path.parent.mkdir(parents=True)
         path.write_text(json.dumps([
             {'id': 'lvce', 'name': 'LVCE Editor', 'version': 'v0.114.2', 'archive': 'old.deb',
              'url': 'https://example.invalid/old.deb', 'sha256': 'old',

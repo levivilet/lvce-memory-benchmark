@@ -38,7 +38,7 @@ jobs:
           import os
           from pathlib import Path
 
-          editors = json.loads(Path('editors.lock.json').read_text())
+          editors = json.loads(Path('config/editors.lock.json').read_text())
           editor = next(editor for editor in editors if editor['id'] == os.environ['EDITOR'])
           fingerprint = hashlib.sha256(json.dumps(editor, sort_keys=True).encode()).hexdigest()
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
