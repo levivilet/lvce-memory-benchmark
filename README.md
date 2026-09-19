@@ -179,6 +179,19 @@ minimum. CI combines complete per-editor runs from the same workflow and protoco
 retaining each editor’s host metadata and capture time. Runner hardware can differ
 between editors as well as between dates.
 
+To update the LVCE Editor lock entry to the latest stable official release, run:
+
+```sh
+npm run update:lvce
+```
+
+The updater selects the exact `amd64.deb` asset from the GitHub release, downloads
+it to a temporary file, verifies the SHA-256 digest and required LVCE binary,
+then atomically updates only the LVCE version, archive, URL and checksum in
+`editors.lock.json`. It rejects drafts, prereleases, missing assets, malformed
+packages and failed downloads without changing the lockfile. Use
+`npm run update:lvce -- --version 0.116.0` to select a specific stable release.
+
 ## Development & CI
 
 Python's standard library handles measurement; the dashboard is static HTML/CSS/JS

@@ -6,7 +6,8 @@
   "scripts": {
     "check": "node --check site/app.js && node --check basic-electron/main.js && node --check basic-electron/preload.js && node --check basic-electron/renderer.js && python3 -m py_compile scripts/*.py",
     "test": "python3 -m unittest discover -s tests",
-    "test:browser": "node --test tests/report.test.js"
+    "test:browser": "node --test tests/report.test.js",
+    "update:lvce": "python3 scripts/update_lvce.py"
   },
   "engines": {"node": ">=24"},
   "devDependencies": {"playwright": "1.63.0"}
