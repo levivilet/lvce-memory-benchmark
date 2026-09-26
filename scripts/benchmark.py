@@ -24,6 +24,11 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = 'Memory benchmark fixture.\n' * 100
 
 
+def protocol_options(arguments):
+    """Return JSON-safe benchmark options, excluding local filesystem paths."""
+    return {key: value for key, value in arguments.items() if key not in ('output', 'lockfile')}
+
+
 def run(args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, **kwargs).stdout.strip()
@@ -389,7 +394,7 @@ def main():
             editor['runtime'] = run(['dpkg-query', '-W', '-f=${Version}', 'openjdk-21-jre-headless'])
         if editor['id'] == 'basic-electron':
             editor['sourceRevision'] = os.environ.get('BENCHMARK_COMMIT', 'local')
-    protocol = {key: value for key, value in vars(args).items() if key != 'output'}
+    protocol = protocol_options(vars(args))
     protocol['budgets'] = budgets
     data = dict(schemaVersion=1, capturedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 commit=os.environ.get('BENCHMARK_COMMIT', 'local'), runUrl=os.environ.get('BENCHMARK_RUN_URL'),
