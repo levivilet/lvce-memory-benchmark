@@ -48,8 +48,9 @@ def install_runtime(editor, target, destination):
 def install():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--editors', default='lvce,vscode,zed,geany,eclipse,idea,atom,lapce,theia,basic-electron')
+    parser.add_argument('--lockfile', type=Path, default=ROOT / 'config/editors.lock.json')
     args = parser.parse_args()
-    editors = json.loads((ROOT / 'config/editors.lock.json').read_text())
+    editors = json.loads(args.lockfile.read_text())
     ids = args.editors.split(',')
     if len(set(ids)) != len(ids) or set(ids) - {e['id'] for e in editors} - {'geany'}:
         parser.error('Unknown or duplicate editor')

@@ -82,10 +82,10 @@ jobs:
   report:
     # Preserve the required branch-protection check name.
     name: benchmark
-    needs: benchmark
+    needs: [benchmark, historical]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -102,7 +102,19 @@ jobs:
           path: results/editors
       - name: Combine editor results
         run: python3 scripts/combine.py
-      - name: Build measured report
+      - name: Download historical version results
+        uses: actions/download-artifact@v5
+        with:
+          pattern: historical-*
+          path: results/history-artifacts
+      - name: Download selected historical release inventory
+        uses: actions/download-artifact@v5
+        with:
+          name: historical-inventory
+          path: results/historical-inventory
+      - name: Combine historical version results
+        run: python3 scripts/historical.py combine --input results/history-artifacts --output results/history.json --inventory results/historical-inventory/historical-inventory.json
+      - name: Build measured and historical reports
         run: python3 scripts/build.py
       - name: Install browser for report checks
         run: npx playwright install --with-deps chromium
@@ -138,3 +150,85 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/deploy-pages@v4
         id: deployment
+
+  historical-inventory:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.inventory.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: inventory
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then limit=2; else limit=100; fi
+          matrix=$(python3 scripts/historical.py inventory --limit "$limit" --output .tmp/historical-inventory.json)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+      - name: Save selected release inventory
+        uses: actions/upload-artifact@v5
+        with:
+          name: historical-inventory
+          path: .tmp/historical-inventory.json
+          retention-days: 90
+
+  historical:
+    needs: historical-inventory
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.historical-inventory.outputs.matrix) }}
+    env:
+      EDITOR: ${{ matrix.editor }}
+      VERSION: ${{ matrix.version }}
+      ARCHIVE_URL: ${{ matrix.archiveUrl }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Initialize result record
+        run: python3 scripts/historical.py initialize --editor "$EDITOR" --version "$VERSION" --root ".tmp/historical/$EDITOR/$VERSION"
+      - name: Install desktop dependencies
+        continue-on-error: true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 curl xz-utils xvfb xauth xdotool xclip openbox imagemagick mesa-utils mesa-vulkan-drivers libvulkan1 libasound2t64 libgtk-3-0 libnss3 libgbm1 libxss1 libxtst6 dbus
+      - name: Resolve official release and verify archive
+        id: release
+        continue-on-error: true
+        run: |
+          lockfile=$(python3 scripts/historical.py prepare --editor "$EDITOR" --version "$VERSION" --url "$ARCHIVE_URL" --root ".tmp/historical/$EDITOR/$VERSION")
+          echo "lockfile=$lockfile" >> "$GITHUB_OUTPUT"
+      - name: Install historical editor
+        id: install-historical-editor
+        if: steps.release.outcome == 'success'
+        continue-on-error: true
+        run: python3 scripts/install.py --editors "$EDITOR" --lockfile "${{ steps.release.outputs.lockfile }}"
+      - name: Run normal-memory historical benchmark
+        if: steps.release.outcome == 'success' && steps.install-historical-editor.outcome == 'success'
+        id: benchmark-historical
+        continue-on-error: true
+        env:
+          BENCHMARK_COMMIT: ${{ github.sha }}
+          BENCHMARK_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          bash scripts/run.sh --editors "$EDITOR" --lockfile "${{ steps.release.outputs.lockfile }}" --output ".tmp/historical/$EDITOR/$VERSION/results.json" --repeats 3 --budgets '' --refinement-iterations 0 --settle-seconds 10 --sample-seconds 4 --probes 2
+      - name: Record release outcome
+        if: always()
+        env:
+          EDITOR: ${{ matrix.editor }}
+          VERSION: ${{ matrix.version }}
+          PREPARE_OUTCOME: ${{ steps.release.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install-historical-editor.outcome }}
+          BENCHMARK_OUTCOME: ${{ steps.benchmark-historical.outcome }}
+        run: |
+          code=0
+          if [[ "$PREPARE_OUTCOME" != success || "$INSTALL_OUTCOME" != success || "$BENCHMARK_OUTCOME" != success ]]; then code=1; fi
+          python3 scripts/historical.py finalize --editor "$EDITOR" --version "$VERSION" --root ".tmp/historical/$EDITOR/$VERSION" --exit-code "$code" --prepare-outcome "$PREPARE_OUTCOME" --install-outcome "$INSTALL_OUTCOME" --benchmark-outcome "$BENCHMARK_OUTCOME"
+      - name: Upload historical result and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: historical-${{ matrix.editor }}-${{ matrix.version }}
+          path: .tmp/historical/${{ matrix.editor }}/${{ matrix.version }}
+          if-no-files-found: error
+          retention-days: 90

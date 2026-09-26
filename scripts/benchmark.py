@@ -358,6 +358,7 @@ def main():
     parser.add_argument('--probe-timeout', type=int, default=5)
     parser.add_argument('--seed', type=int, default=1729)
     parser.add_argument('--output', type=Path, default=ROOT / 'results/results.json')
+    parser.add_argument('--lockfile', type=Path, default=ROOT / 'config/editors.lock.json')
     args = parser.parse_args()
     budgets = sorted(set(int(n) for n in args.budgets.split(',') if n))
     if any(n <= 0 for n in [args.repeats, args.settle_seconds, args.sample_seconds, args.probes, args.startup_timeout, args.probe_timeout, *budgets]) or args.sample_seconds < 2:
@@ -370,7 +371,7 @@ def main():
         if not os.environ.get(key):
             parser.error(f'Missing {key}; use scripts/run.sh on a dedicated Xvfb display')
     user = pwd.getpwnam(os.environ['SUDO_USER'])
-    editors = json.loads((ROOT / 'config/editors.lock.json').read_text())
+    editors = json.loads(args.lockfile.read_text())
     for editor in editors:
         editor['command'] = str(ROOT / '.tmp/apps' / editor['id'] / editor['binary'])
     if shutil.which('geany'):
