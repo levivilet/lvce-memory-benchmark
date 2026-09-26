@@ -44,6 +44,20 @@ test('measured report renders and responds to filters on desktop and mobile', as
     await page.selectOption('#trial',String(count-1))
     assert.ok((await page.locator('#trial-detail').textContent()).includes('samples'))
     assert.ok(await page.locator('a[download]').count())
+    for (const file of ['lvce-history.html', 'vscode-history.html']) {
+      await page.goto(`http://127.0.0.1:8765/${file}`)
+      await page.waitForSelector('#history-meta')
+      assert.ok((await page.locator('#history-meta').textContent()).includes('successful releases'))
+      const history = await (await fetch('http://127.0.0.1:8765/history.json')).json()
+      const editor = file.startsWith('lvce-') ? 'lvce' : 'vscode'
+      assert.ok((await page.locator('#history-table tr').count()) === history.versions[editor].length)
+      assert.equal(await page.locator('a[href="./"]').count(), 1)
+      await page.setViewportSize({width:390,height:844})
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth))
+    }
+    await page.goto('http://127.0.0.1:8765/')
+    assert.ok(await page.locator('a[href="lvce-history.html"]').count())
+    assert.ok(await page.locator('a[href="vscode-history.html"]').count())
     await page.setViewportSize({width:390,height:844})
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth))
     assert.deepEqual(errors,[])

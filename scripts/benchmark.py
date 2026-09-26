@@ -24,6 +24,11 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = 'Memory benchmark fixture.\n' * 100
 
 
+def protocol_options(arguments):
+    """Return JSON-safe benchmark options, excluding local filesystem paths."""
+    return {key: value for key, value in arguments.items() if key not in ('output', 'lockfile')}
+
+
 def run(args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, **kwargs).stdout.strip()
@@ -358,6 +363,7 @@ def main():
     parser.add_argument('--probe-timeout', type=int, default=5)
     parser.add_argument('--seed', type=int, default=1729)
     parser.add_argument('--output', type=Path, default=ROOT / 'results/results.json')
+    parser.add_argument('--lockfile', type=Path, default=ROOT / 'config/editors.lock.json')
     args = parser.parse_args()
     budgets = sorted(set(int(n) for n in args.budgets.split(',') if n))
     if any(n <= 0 for n in [args.repeats, args.settle_seconds, args.sample_seconds, args.probes, args.startup_timeout, args.probe_timeout, *budgets]) or args.sample_seconds < 2:
@@ -370,7 +376,7 @@ def main():
         if not os.environ.get(key):
             parser.error(f'Missing {key}; use scripts/run.sh on a dedicated Xvfb display')
     user = pwd.getpwnam(os.environ['SUDO_USER'])
-    editors = json.loads((ROOT / 'config/editors.lock.json').read_text())
+    editors = json.loads(args.lockfile.read_text())
     for editor in editors:
         editor['command'] = str(ROOT / '.tmp/apps' / editor['id'] / editor['binary'])
     if shutil.which('geany'):
@@ -388,7 +394,7 @@ def main():
             editor['runtime'] = run(['dpkg-query', '-W', '-f=${Version}', 'openjdk-21-jre-headless'])
         if editor['id'] == 'basic-electron':
             editor['sourceRevision'] = os.environ.get('BENCHMARK_COMMIT', 'local')
-    protocol = {key: value for key, value in vars(args).items() if key != 'output'}
+    protocol = protocol_options(vars(args))
     protocol['budgets'] = budgets
     data = dict(schemaVersion=1, capturedAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 commit=os.environ.get('BENCHMARK_COMMIT', 'local'), runUrl=os.environ.get('BENCHMARK_RUN_URL'),
