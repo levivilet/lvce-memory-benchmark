@@ -157,8 +157,8 @@ def finalize(editor, version, root, exit_code, prepare_outcome='unknown', instal
             status['status'] = 'succeeded'
             metadata = data['editors'][0]
             try:
-                entry = next(json.loads(path.read_text())[0] for path in root.glob('*.json')
-                             if path.name != 'status.json')
+                lockfile = root / f'{editor}-{version}.json'
+                entry = json.loads(lockfile.read_text())[0]
                 binary = ROOT / '.tmp/apps' / editor / entry['binary']
                 runtime = subprocess.run([str(binary), '-p', 'process.versions.electron'],
                     env={**os.environ, 'ELECTRON_RUN_AS_NODE': '1'}, check=True,

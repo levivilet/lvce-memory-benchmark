@@ -88,6 +88,25 @@ class HistoricalTests(unittest.TestCase):
                 historical.main()
             self.assertEqual(json.loads(output.read_text()), {'include': inventory.return_value})
 
+    @patch.object(historical.subprocess, 'run')
+    def test_finalize_reads_exact_version_lockfile_when_results_json_is_also_present(self, run):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'attempt'
+            historical.initialize('lvce', 'v0.5.0', root)
+            entry = dict(id='lvce', binary='usr/lib/lvce/lvce', runtimePolicy='bundled runtime')
+            (root / 'lvce-v0.5.0.json').write_text(json.dumps([entry]))
+            (root / 'results.json').write_text(json.dumps({
+                'editors': [{'url': 'https://official.example/lvce.deb', 'sha256': 'abc'}],
+                'trials': [dict(budgetMiB=None, status='passed') for _ in range(3)],
+            }))
+            run.return_value.stdout = '44.3.0\n'
+            with patch.object(historical, 'ROOT', Path(temporary)):
+                historical.finalize('lvce', 'v0.5.0', root, 0, 'success', 'success', 'success')
+            status = json.loads((root / 'status.json').read_text())
+            self.assertEqual(status['status'], 'succeeded')
+            self.assertEqual(status['runtime'], 'Electron 44.3.0 (bundled; not overridden)')
+            self.assertEqual(status['archiveUrl'], 'https://official.example/lvce.deb')
+
 
 if __name__ == '__main__':
     unittest.main()
