@@ -257,6 +257,7 @@ def main():
         data = release_inventory(args.limit)
         rendered = json.dumps({'include': data}, separators=(',', ':'))
         if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(rendered + '\n')
         print(rendered)
     elif args.command == 'prepare':

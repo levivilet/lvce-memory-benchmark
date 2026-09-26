@@ -79,6 +79,15 @@ class HistoricalTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'does not match'):
                     historical.resolve('lvce', 'v0.5.0', root / 'invalid', 'https://example.invalid/editor.deb')
 
+    @patch.object(historical, 'release_inventory', return_value=[
+        dict(editor='lvce', version='v0.5.0', archiveUrl='https://official.example/release.deb')])
+    def test_inventory_creates_parent_directories_for_github_output_artifact(self, inventory):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / '.tmp/deep/inventory.json'
+            with patch.object(sys, 'argv', ['historical.py', 'inventory', '--limit', '1', '--output', str(output)]):
+                historical.main()
+            self.assertEqual(json.loads(output.read_text()), {'include': inventory.return_value})
+
 
 if __name__ == '__main__':
     unittest.main()
